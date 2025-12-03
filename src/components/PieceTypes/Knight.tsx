@@ -1,0 +1,66 @@
+import type { dimension, PieceData, TileData } from "../types.ts";
+import { getPinBlocks, filterMoves } from "../Board.tsx";
+
+export function knightMoves(
+  piece: PieceData,
+  board: TileData[],
+  checkBlocks: Set<TileData> | null
+): Set<TileData> {
+  piece.moves = new Set<TileData>();
+  const [rank, file] = [piece.rank, piece.file];
+  const color = piece.color;
+
+  // Check if check can be avoided via blocking
+  if (checkBlocks && checkBlocks.size === 0) return piece.moves;
+
+  // Check if knight is pinned to king
+  for (const tile of board) {
+    if (tile.piece?.type === "king" && tile.piece?.color === color) {
+      if (getPinBlocks(board, [tile.rank, tile.file], [rank, file]))
+        return piece.moves;
+      break;
+    }
+  }
+
+  const directions = [
+    [rank - 2, file + 1],
+    [rank - 1, file + 2],
+    [rank + 1, file + 2],
+    [rank + 2, file + 1],
+    [rank + 2, file - 1],
+    [rank + 1, file - 2],
+    [rank - 1, file - 2],
+    [rank - 2, file - 1],
+  ];
+
+  for (const direction of directions) {
+    const [i, j] = direction;
+    if (i < 0 || i >= 8 || j < 0 || j >= 8) continue;
+    piece.moves.add(board[i * 8 + j]);
+  }
+
+  // Restrict moves if king is in check
+  if (checkBlocks) filterMoves(piece.moves, checkBlocks);
+
+  return piece.moves;
+}
+
+export function knightBlock(
+  piece: PieceData,
+  board: TileData[],
+  blockedPos: [dimension, dimension]
+): Set<TileData> {
+  void board;
+  void blockedPos;
+  return piece.moves;
+}
+
+export function knightUnblock(
+  piece: PieceData,
+  board: TileData[],
+  unblockedPos: [dimension, dimension]
+): Set<TileData> {
+  void board;
+  void unblockedPos;
+  return piece.moves;
+}
