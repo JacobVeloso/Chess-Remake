@@ -17,10 +17,10 @@ import {
 
 /**
  * Checks if the piece at piecePos is pinned to their king at kingPos and determines all moves that can block the pin.
- * @param board
- * @param kingPos
- * @param piecePos
- * @returns Collection of all moves that that can block the pin (including capturing the attacker itself), or null if piece is not pinned.
+ * @param board : TileData[]
+ * @param kingPos : [dimension, dimension]
+ * @param piecePos : [dimension, dimension]
+ * @returns Set<TileData> | null : Collection of all moves that that can block the pin (including capturing the attacker itself), or null if piece is not pinned.
  */
 export function getPinBlocks(
   board: TileData[],
@@ -54,7 +54,7 @@ export function getPinBlocks(
     const direction = pieceRank > kingRank ? 1 : -1;
 
     // Check for an opposing rook or queen
-    for (let i = pieceRank; i >= 0 && i < 8; i += direction) {
+    for (let i = pieceRank + direction; i >= 0 && i < 8; i += direction) {
       pinBlocks.add(board[i * 8 + pieceFile]);
       const piece = board[i * 8 + pieceFile].piece;
       if (
@@ -71,7 +71,7 @@ export function getPinBlocks(
     if (!pinPresent) return null;
 
     // Check if another piece is between piece and king
-    for (let i = kingRank; i !== pieceRank; i += direction) {
+    for (let i = kingRank + direction; i !== pieceRank; i += direction) {
       pinBlocks.add(board[i * 8 + pieceFile]);
       if (board[i * 8 + pieceFile].piece) return null;
     }
@@ -84,7 +84,7 @@ export function getPinBlocks(
     const direction = pieceFile > kingFile ? 1 : -1;
 
     // Check for an opposing rook or queen
-    for (let i = pieceFile; i >= 0 && i < 8; i += direction) {
+    for (let i = pieceFile + direction; i >= 0 && i < 8; i += direction) {
       pinBlocks.add(board[pieceRank * 8 + i]);
       const piece = board[pieceRank * 8 + i].piece;
       if (
@@ -101,7 +101,7 @@ export function getPinBlocks(
     if (!pinPresent) return null;
 
     // Check if another piece is between piece and king
-    for (let i = kingFile; i !== pieceFile; i += direction) {
+    for (let i = kingFile + direction; i !== pieceFile; i += direction) {
       pinBlocks.add(board[pieceRank * 8 + i]);
       if (board[pieceRank * 8 + i].piece) return null;
     }
@@ -115,8 +115,8 @@ export function getPinBlocks(
     const fileDirection = pieceFile > kingFile ? 1 : -1;
 
     // Check for an opposing bishop or queen
-    let i = pieceRank;
-    let j = pieceFile;
+    let i = pieceRank + rankDirection;
+    let j = pieceFile + fileDirection;
     while (i >= 0 && i < 8 && j >= 0 && j < 8) {
       pinBlocks.add(board[i * 8 + j]);
       const piece = board[i * 8 + j].piece;
@@ -136,8 +136,8 @@ export function getPinBlocks(
     if (!pinPresent) return null;
 
     // Check if another piece is between piece and king
-    i = kingRank;
-    j = kingFile;
+    i = kingRank + rankDirection;
+    j = kingFile + fileDirection;
     while (i !== pieceRank || j !== pieceFile) {
       pinBlocks.add(board[i * 8 + j]);
       if (board[i * 8 + j].piece) return null;
@@ -154,8 +154,8 @@ export function getPinBlocks(
 
 /**
  * Takes the set intersection of allMoves and allowedMoves, modifying allMoves in place
- * @param allMoves
- * @param allowedMoves
+ * @param allMoves : Set<TileData>
+ * @param allowedMoves : Set<TileData>
  */
 export function filterMoves(
   allMoves: Set<TileData>,
@@ -168,10 +168,10 @@ export function filterMoves(
 
 /**
  * Determines all moves that can block a piece from attacking the king, assuming a straight line attack. Can also be used for any generic piece.
- * @param board
- * @param kingPos
- * @param attackerPos
- * @returns Collection of moves that are in between attacker and king.
+ * @param board : TileData[]
+ * @param kingPos : [dimension, dimension]
+ * @param attackerPos : [dimension, dimension]
+ * @returns Set<TileData> : Collection of moves that are in between attacker and king.
  */
 export function blockingMoves(
   board: TileData[],
@@ -214,9 +214,9 @@ export function blockingMoves(
 }
 
 /**
- * Removes piece from all collections of attackers of tiles
- * @param board
- * @param piece
+ * Removes all attacks on the board by a given piece
+ * @param board : TileData[]
+ * @param piece : PieceData
  */
 export function removeAttacks(board: TileData[], piece: PieceData): void {
   for (const tile of board) tile.attackers.delete(piece);
@@ -224,9 +224,9 @@ export function removeAttacks(board: TileData[], piece: PieceData): void {
 
 /**
  * Erases a piece's previous possible moves and recalculates them. Also determines if the piece is now attacking the opposing king.
- * @param board
- * @param piece
- * @returns Collection of moves that can block the piece's attack on opposing king, or null if the piece is not attacking.
+ * @param board : TileData[]
+ * @param piece : PieceData
+ * @returns Set<TileData> | null : Collection of moves that can block the piece's attack on opposing king, or null if the piece is not attacking.
  */
 export function recalculateMoves(
   board: TileData[],
@@ -253,6 +253,12 @@ export function recalculateMoves(
   return checkBlocks;
 }
 
+/**
+ * Filters out illegal moves from a piece's set of all possible moves.
+ * @param board : TileData[]
+ * @param piece : PieceData
+ * @returns Set<TileData>
+ */
 function legalMoves(board: TileData[], piece: PieceData): Set<TileData> {
   const moves = piece.moves;
   for (const move of moves) {
@@ -648,7 +654,7 @@ const Board = () => {
     if (!canMove) return;
 
     // Check that move is legal
-    //if (!legalMoves(tiles, piece).has(targetTile)) return;
+    if (!legalMoves(tiles, piece).has(targetTile)) return;
 
     const sourceTile = tiles[piece.rank * 8 + piece.file];
     const color = piece.color;

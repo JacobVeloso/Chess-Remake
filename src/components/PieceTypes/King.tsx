@@ -56,7 +56,7 @@ export function kingUnblock(
   return piece.moves;
 }
 
-export function inCheck(
+export function checkBlocks(
   board: TileData[],
   rank: dimension,
   file: dimension
@@ -92,7 +92,7 @@ function castlingMoves(board: TileData[], king: PieceData): Set<TileData> {
   if (
     king.type !== "king" ||
     king.params.get("hasMoved") ||
-    inCheck(board, rank, 4)
+    checkBlocks(board, rank, 4)
   )
     return castleMoves;
 
