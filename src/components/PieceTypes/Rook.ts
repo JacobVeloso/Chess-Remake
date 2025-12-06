@@ -129,7 +129,7 @@ export function rookBlock(
     if (
       (ownRank === blockedRank &&
         move.file * direction > ownFile * direction &&
-        move.file > blockedFile * direction) ||
+        move.file * direction > blockedFile * direction) ||
       (ownFile === blockedFile &&
         move.rank * direction > ownRank * direction &&
         move.rank * direction > blockedRank * direction)

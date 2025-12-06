@@ -144,7 +144,7 @@ export function pawnUnblock(
     piece.moves.add(board[unblockedRank * 8 + unblockedFile]);
     if (canMoveTwo && Math.abs(ownRank - unblockedRank) === 1) {
       piece.moves.add(
-        board[(unblockedRank + 2 * direction) * 8 + unblockedFile]
+        board[(unblockedRank + 1 * direction) * 8 + unblockedFile]
       );
     }
   }

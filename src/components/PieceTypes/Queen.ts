@@ -1,6 +1,6 @@
 import type { dimension, PieceData, TileData } from "../types.ts";
-import { bishopMoves, bishopBlock, bishopUnblock } from "./Bishop";
-import { rookMoves, rookBlock, rookUnblock } from "./Rook";
+import { bishopMoves, bishopBlock, bishopUnblock } from "./Bishop.ts";
+import { rookMoves, rookBlock, rookUnblock } from "./Rook.ts";
 
 export function queenMoves(
   piece: PieceData,

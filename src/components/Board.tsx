@@ -2,11 +2,15 @@ import "./Board.css";
 import pieces from "../assets/index";
 import Tile, { isAttacked } from "./Tile";
 import type { PieceData, TileData, type, color, dimension } from "./types.ts";
-import { bishopMoves, bishopBlock, bishopUnblock } from "./PieceTypes/Bishop";
-import { rookMoves, rookBlock, rookUnblock } from "./PieceTypes/Rook";
+import {
+  bishopMoves,
+  bishopBlock,
+  bishopUnblock,
+} from "./PieceTypes/Bishop.ts";
+import { rookMoves, rookBlock, rookUnblock } from "./PieceTypes/Rook.ts";
 import { knightMoves, knightBlock, knightUnblock } from "./PieceTypes/Knight";
-import { pawnMoves, pawnBlock, pawnUnblock } from "./PieceTypes/Pawn";
-import { kingMoves, kingBlock, kingUnblock } from "./PieceTypes/King.tsx";
+import { pawnMoves, pawnBlock, pawnUnblock } from "./PieceTypes/Pawn.ts";
+import { kingMoves, kingBlock, kingUnblock } from "./PieceTypes/King.ts";
 import { queenMoves, queenBlock, queenUnblock } from "./PieceTypes/Queen";
 import { useState, useEffect } from "react";
 import {
