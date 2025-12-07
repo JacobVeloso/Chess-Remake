@@ -238,7 +238,7 @@ export function recalculateMoves(
 ): Set<TileData> | null {
   let checkBlocks: Set<TileData> | null = null;
   removeAttacks(board, piece);
-  const newMoves = piece.calcMoves(piece, board, null);
+  const newMoves = piece.calcMoves(piece, board);
   for (const move of newMoves) {
     move.attackers.add(piece);
 
@@ -786,7 +786,7 @@ const Board = () => {
     for (const opp of PIECES) {
       if (opp.color !== piece.color) {
         removeAttacks(tiles, opp);
-        const oppMoves = opp.calcMoves(opp, tiles, checkBlocks);
+        const oppMoves = opp.calcMoves(opp, tiles);
         for (const move of oppMoves) {
           move.attackers.add(opp);
         }

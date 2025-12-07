@@ -2,14 +2,10 @@ import type { dimension, PieceData, TileData } from "../types.ts";
 import { bishopMoves, bishopBlock, bishopUnblock } from "./Bishop.ts";
 import { rookMoves, rookBlock, rookUnblock } from "./Rook.ts";
 
-export function queenMoves(
-  piece: PieceData,
-  board: TileData[],
-  checkBlocks: Set<TileData> | null
-): Set<TileData> {
+export function queenMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   piece.moves = new Set<TileData>([
-    ...bishopMoves(piece, board, checkBlocks),
-    ...rookMoves(piece, board, checkBlocks),
+    ...bishopMoves(piece, board),
+    ...rookMoves(piece, board),
   ]);
   return piece.moves;
 }

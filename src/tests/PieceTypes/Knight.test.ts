@@ -1,10 +1,38 @@
 import { describe, it, expect } from "vitest";
-import {
-  knightMoves,
-  knightBlock,
-  knightUnblock,
-} from "../../components/PieceTypes/Knight";
 import { board, getTile, makePiece, placePiece, setsEqual } from "../utilities";
+
+describe("knightMoves", () => {
+  it("simple knight moves", () => {
+    const knight = makePiece("knight", "white", 3, 3);
+    getTile(3, 3).piece = knight;
+
+    const expected = new Set([
+      getTile(4, 1),
+      getTile(5, 2),
+      getTile(5, 4),
+      getTile(4, 5),
+      getTile(2, 5),
+      getTile(1, 4),
+      getTile(1, 2),
+      getTile(2, 1),
+    ]);
+
+    knight.calcMoves(knight, board);
+
+    expect(setsEqual(expected, knight.moves)).toBeTruthy();
+  });
+
+  it("knight moves off board", () => {
+    const knight = makePiece("knight", "white", 7, 6);
+    getTile(7, 6).piece = knight;
+
+    const expected = new Set([getTile(5, 5), getTile(5, 7), getTile(6, 4)]);
+
+    knight.calcMoves(knight, board);
+
+    expect(setsEqual(expected, knight.moves)).toBeTruthy();
+  });
+});
 
 describe("knightBlock", () => {
   it("block knight", () => {

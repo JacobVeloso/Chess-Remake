@@ -1,46 +1,41 @@
 import type { dimension, PieceData, TileData } from "../types.ts";
-import { getPinBlocks, filterMoves } from "../Board.tsx";
 
-export function rookMoves(
-  piece: PieceData,
-  board: TileData[],
-  checkBlocks: Set<TileData> | null
-): Set<TileData> {
+export function rookMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
   const color = piece.color;
   piece.moves = new Set<TileData>();
-  if (checkBlocks && checkBlocks.size === 0) return piece.moves;
+  // if (checkBlocks && checkBlocks.size === 0) return piece.moves;
 
-  // Check if rook is pinned to king
-  let pinBlocks: Set<TileData> | null = null;
-  for (const tile of board) {
-    if (tile.piece?.type === "king" && tile.piece?.color === color) {
-      pinBlocks = getPinBlocks(board, [tile.rank, tile.file], [rank, file]);
-      if (pinBlocks) {
-        // If pin is not along straight, bishop cannot move
-        const pinBlock = [...pinBlocks][0];
-        if (pinBlock.rank !== piece.rank || pinBlock.file !== piece.file)
-          return piece.moves;
-      }
-      break;
-    }
-  }
+  // // Check if rook is pinned to king
+  // let pinBlocks: Set<TileData> | null = null;
+  // for (const tile of board) {
+  //   if (tile.piece?.type === "king" && tile.piece?.color === color) {
+  //     pinBlocks = getPinBlocks(board, [tile.rank, tile.file], [rank, file]);
+  //     if (pinBlocks) {
+  //       // If pin is not along straight, bishop cannot move
+  //       const pinBlock = [...pinBlocks][0];
+  //       if (pinBlock.rank !== piece.rank || pinBlock.file !== piece.file)
+  //         return piece.moves;
+  //     }
+  //     break;
+  //   }
+  // }
 
   // Up
   let i = rank - 1;
   let j = file;
   for (; i >= 0; --i) {
     const index = i * 8 + j;
-    // Capture
-    if (board[index].piece && board[index].piece?.color != color) {
-      piece.moves.add(board[index]);
-      break;
-    }
-    // Piece blocking
-    if (board[index].piece) {
-      piece.moves.add(board[index]);
-      break;
-    }
+    // // Capture
+    // if (board[index].piece && board[index].piece?.color != color) {
+    //   piece.moves.add(board[index]);
+    //   break;
+    // }
+    // // Piece blocking
+    // if (board[index].piece) {
+    //   piece.moves.add(board[index]);
+    //   break;
+    // }
     piece.moves.add(board[index]);
   }
 
@@ -49,60 +44,60 @@ export function rookMoves(
   j = file + 1;
   for (; j < 8; ++j) {
     const index = i * 8 + j;
-    // Capture
-    if (board[index].piece && board[index].piece?.color != color) {
-      piece.moves.add(board[index]);
-      break;
-    }
-    // Piece blocking
-    if (board[index].piece) {
-      piece.moves.add(board[index]);
-      break;
-    }
+    // // Capture
+    // if (board[index].piece && board[index].piece?.color != color) {
+    //   piece.moves.add(board[index]);
+    //   break;
+    // }
+    // // Piece blocking
+    // if (board[index].piece) {
+    //   piece.moves.add(board[index]);
+    //   break;
+    // }
     piece.moves.add(board[index]);
   }
 
   // Down
   i = rank + 1;
   j = file;
-  for (; i < 8; ++j) {
+  for (; i < 8; ++i) {
     const index = i * 8 + j;
-    // Capture
-    if (board[index].piece && board[index].piece?.color != color) {
-      piece.moves.add(board[index]);
-      break;
-    }
-    // Piece blocking
-    if (board[index].piece) {
-      piece.moves.add(board[index]);
-      break;
-    }
+    // // Capture
+    // if (board[index].piece && board[index].piece?.color != color) {
+    //   piece.moves.add(board[index]);
+    //   break;
+    // }
+    // // Piece blocking
+    // if (board[index].piece) {
+    //   piece.moves.add(board[index]);
+    //   break;
+    // }
     piece.moves.add(board[index]);
   }
 
   // Left
   i = rank;
   j = file - 1;
-  for (; j >= 0; ++j) {
+  for (; j >= 0; --j) {
     const index = i * 8 + j;
-    // Capture
-    if (board[index].piece && board[index].piece?.color != color) {
-      piece.moves.add(board[index]);
-      break;
-    }
-    // Piece blocking
-    if (board[index].piece) {
-      piece.moves.add(board[index]);
-      break;
-    }
+    // // Capture
+    // if (board[index].piece && board[index].piece?.color != color) {
+    //   piece.moves.add(board[index]);
+    //   break;
+    // }
+    // // Piece blocking
+    // if (board[index].piece) {
+    //   piece.moves.add(board[index]);
+    //   break;
+    // }
     piece.moves.add(board[index]);
   }
 
-  // Filter out moves that put king in check
-  if (pinBlocks) filterMoves(piece.moves, pinBlocks);
+  // // Filter out moves that put king in check
+  // if (pinBlocks) filterMoves(piece.moves, pinBlocks);
 
-  // Filter out moves that don't block check
-  if (checkBlocks) filterMoves(piece.moves, checkBlocks);
+  // // Filter out moves that don't block check
+  // if (checkBlocks) filterMoves(piece.moves, checkBlocks);
 
   return piece.moves;
 }

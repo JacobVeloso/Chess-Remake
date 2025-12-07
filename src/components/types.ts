@@ -5,12 +5,8 @@ export type PieceData = {
   src: string;
   rank: dimension;
   file: dimension;
-  moves: Set<TileData>
-  calcMoves: (
-    piece: PieceData,
-    board: TileData[],
-    checkBlocks: Set<TileData> | null
-  ) => Set<TileData>;
+  moves: Set<TileData>;
+  calcMoves: (piece: PieceData, board: TileData[]) => Set<TileData>;
   block: (
     piece: PieceData,
     board: TileData[],
@@ -21,8 +17,8 @@ export type PieceData = {
     board: TileData[],
     unblockedPos: [dimension, dimension]
   ) => Set<TileData>;
-  params: Map<string, boolean>
-}
+  params: Map<string, boolean>;
+};
 
 export type TileData = {
   id: string;
@@ -33,7 +29,7 @@ export type TileData = {
   attackers: Set<PieceData>;
 };
 
-export type type = "pawn" | "rook" | "knight" | "bishop" | "king" | "queen"
+export type type = "pawn" | "rook" | "knight" | "bishop" | "king" | "queen";
 
 export type color = "white" | "black";
 

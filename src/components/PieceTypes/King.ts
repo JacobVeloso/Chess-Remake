@@ -2,27 +2,24 @@ import type { dimension, PieceData, TileData } from "../types.ts";
 import { isAttacked } from "../Tile.tsx";
 import { blockingMoves } from "../Board.tsx";
 
-export function kingMoves(
-  piece: PieceData,
-  board: TileData[],
-  checkBlocks: Set<TileData> | null
-): Set<TileData> {
-  void checkBlocks; // Unused variable
+export function kingMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
   const moves = new Set<TileData>();
 
   for (let i = rank - 1; i <= rank + 1; ++i) {
     if (i < 0 || i >= 8) continue;
-    for (var j = file - 1; j <= file + 1; ++j) {
+    for (let j = file - 1; j <= file + 1; ++j) {
       if (j < 0 || j >= 8 || (i === rank && j === file)) continue;
       const tile = board[i * 8 + j];
-      // Check that tile is empty and not attacked
-      if (!tile.piece && !isAttacked(tile, piece.color)) moves.add(tile);
+      // // Check that tile is empty and not attacked
+      // if (!tile.piece && !isAttacked(tile, piece.color))
+      moves.add(tile);
     }
   }
 
   // Add castling moves where applicable
-  return new Set([...moves, ...castlingMoves(board, piece)]);
+  piece.moves = new Set([...moves, ...castlingMoves(board, piece)]);
+  return piece.moves;
 }
 
 export function kingBlock(

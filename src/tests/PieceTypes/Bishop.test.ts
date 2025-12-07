@@ -1,6 +1,52 @@
 import { describe, it, expect } from "vitest";
 import { board, getTile, makePiece, placePiece, setsEqual } from "../utilities";
 
+describe("bishopMoves", () => {
+  it("simple bishop moves", () => {
+    const bishop = makePiece("bishop", "white", 3, 3);
+    getTile(3, 3).piece = bishop;
+
+    const expected = new Set([
+      getTile(2, 4),
+      getTile(1, 5),
+      getTile(0, 6),
+      getTile(4, 4),
+      getTile(5, 5),
+      getTile(6, 6),
+      getTile(7, 7),
+      getTile(4, 2),
+      getTile(5, 1),
+      getTile(6, 0),
+      getTile(2, 2),
+      getTile(1, 1),
+      getTile(0, 0),
+    ]);
+
+    bishop.calcMoves(bishop, board);
+
+    expect(setsEqual(expected, bishop.moves)).toBeTruthy();
+  });
+
+  it("bishop moves off board", () => {
+    const bishop = makePiece("bishop", "white", 0, 3);
+    getTile(0, 3).piece = bishop;
+
+    const expected = new Set([
+      getTile(1, 4),
+      getTile(2, 5),
+      getTile(3, 6),
+      getTile(4, 7),
+      getTile(1, 2),
+      getTile(2, 1),
+      getTile(3, 0),
+    ]);
+
+    bishop.calcMoves(bishop, board);
+
+    expect(setsEqual(expected, bishop.moves)).toBeTruthy();
+  });
+});
+
 describe("bishopBlock", () => {
   it("block bishop", () => {
     const bishop = makePiece("bishop", "white", 3, 0);

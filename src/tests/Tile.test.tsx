@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { isAttacked } from "../components/Tile.tsx";
-import type { TileData } from "../components/types.ts";
 import { getTile, makePiece } from "./utilities.ts";
 
 describe("isAttacked", () => {

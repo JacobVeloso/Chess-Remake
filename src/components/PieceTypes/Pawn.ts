@@ -1,31 +1,26 @@
 import type { dimension, PieceData, TileData } from "../types.ts";
-import { filterMoves, getPinBlocks } from "../Board.tsx";
 
-export function pawnMoves(
-  piece: PieceData,
-  board: TileData[],
-  checkBlocks: Set<TileData> | null
-): Set<TileData> {
+export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   piece.moves = new Set<TileData>();
   const [rank, file] = [piece.rank, piece.file];
   const color = piece.color;
-  if (checkBlocks && checkBlocks.size === 0) return piece.moves;
+  // if (checkBlocks && checkBlocks.size === 0) return piece.moves;
 
-  // Check if pawn is pinned to king
-  for (const tile of board) {
-    if (tile.piece?.type === "king" && tile.piece?.color === color) {
-      const pinBlocks = getPinBlocks(
-        board,
-        [tile.rank, tile.file],
-        [rank, file]
-      );
-      if (pinBlocks) {
-        // if pin is not along same file, pawn cannot move
-        if ([...pinBlocks][0].file !== file) return piece.moves;
-      }
-      break;
-    }
-  }
+  // // Check if pawn is pinned to king
+  // for (const tile of board) {
+  //   if (tile.piece?.type === "king" && tile.piece?.color === color) {
+  //     const pinBlocks = getPinBlocks(
+  //       board,
+  //       [tile.rank, tile.file],
+  //       [rank, file]
+  //     );
+  //     if (pinBlocks) {
+  //       // if pin is not along same file, pawn cannot move
+  //       if ([...pinBlocks][0].file !== file) return piece.moves;
+  //     }
+  //     break;
+  //   }
+  // }
 
   let startRank: 6 | 1;
   let enPassantRank: 3 | 4;
@@ -54,14 +49,16 @@ export function pawnMoves(
     // capture on right
     if (
       file < 7 &&
-      board[(rank + direction) * 8 + file + 1].piece?.color !== color
+      board[(rank + direction) * 8 + file + 1].piece &&
+      board[(rank + direction) * 8 + file + 1].piece!.color !== color
     )
       piece.moves.add(board[(rank + direction) * 8 + file + 1]);
 
     // capture on left
     if (
       file > 0 &&
-      board[(rank + direction) * 8 + file - 1].piece?.color !== color
+      board[(rank + direction) * 8 + file - 1].piece &&
+      board[(rank + direction) * 8 + file - 1].piece!.color !== color
     )
       piece.moves.add(board[(rank + direction) * 8 + file - 1]);
 
@@ -90,8 +87,8 @@ export function pawnMoves(
     }
   }
 
-  // Restrict moves if king is in check
-  if (checkBlocks) filterMoves(piece.moves, checkBlocks);
+  // // Restrict moves if king is in check
+  // if (checkBlocks) filterMoves(piece.moves, checkBlocks);
 
   return piece.moves;
 }
