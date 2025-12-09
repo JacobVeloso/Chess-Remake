@@ -38,7 +38,20 @@ import {
   kingUnblock,
 } from "../components/PieceTypes/King.ts";
 
-export const board: TileData[] = new Array(64);
+export const BOARD: TileData[] = new Array(64);
+for (let i = 0; i < 64; ++i) {
+  const rank = Math.floor(i / 8) as dimension;
+  const file = (i % 8) as dimension;
+  const color = (rank + file) % 2 === 0 ? "white" : "black";
+  BOARD[i] = {
+    id: "" + i,
+    rank,
+    file,
+    color,
+    piece: null,
+    attackers: new Set(),
+  };
+}
 export var ID = 0;
 
 export function makePiece(
@@ -146,14 +159,14 @@ export function placePiece(
   file: dimension
 ): boolean {
   const piece = makePiece(type, color, rank, file);
-  const tile = getTile(rank, file);
+  const tile = board(rank, file);
   if (tile.piece) return false;
   tile.piece = piece;
   return true;
 }
 
-export function getTile(rank: dimension, file: dimension): TileData {
-  return board[rank * 8 + file];
+export function board(rank: dimension, file: dimension): TileData {
+  return BOARD[rank * 8 + file];
 }
 
 export function setsEqual<T>(A: Set<T>, B: Set<T>): boolean {

@@ -27,18 +27,31 @@ export function kingBlock(
   board: TileData[],
   blockedPos: [dimension, dimension]
 ): Set<TileData> {
-  const [blockedRank, blockedFile] = blockedPos;
-  void board;
+  // const [blockedRank, blockedFile] = blockedPos;
+  // void board;
 
-  // Remove move now blocked
-  for (const move of piece.moves) {
-    if (move.rank === blockedRank && move.file === blockedFile) {
-      piece.moves.delete(move);
-      break;
+  // const blockedMoves = new Set<TileData>();
+  // // Remove move now blocked
+  // for (const move of piece.moves) {
+  //   if (move.rank === blockedRank && move.file === blockedFile) {
+  //     piece.moves.delete(move);
+  //     blockedMoves.add(move);
+  //     break;
+  //   }
+  // }
+
+  // return piece.moves;
+
+  const attacker = board[blockedPos[0] * 8 + blockedPos[1]].piece!;
+  if (attacker.color === piece.color) {
+    for (const move of piece.moves) {
+      if (move.rank === blockedPos[0] && move.file === blockedPos[1]) {
+        piece.moves.delete(move);
+        return new Set<TileData>([move]);
+      }
     }
   }
-
-  return piece.moves;
+  return new Set();
 }
 
 export function kingUnblock(
@@ -46,11 +59,16 @@ export function kingUnblock(
   board: TileData[],
   unblockedPos: [dimension, dimension]
 ): Set<TileData> {
-  const [unblockedRank, unblockedFile] = unblockedPos;
+  // const [unblockedRank, unblockedFile] = unblockedPos;
 
-  // Insert move now unblocked
-  piece.moves.add(board[unblockedRank * 8 + unblockedFile]);
-  return piece.moves;
+  // // Insert move now unblocked
+  // piece.moves.add(board[unblockedRank * 8 + unblockedFile]);
+  // return piece.moves;
+
+  void piece;
+  void board;
+  void unblockedPos;
+  return new Set();
 }
 
 export function checkBlocks(
@@ -59,7 +77,6 @@ export function checkBlocks(
   file: dimension
 ): Set<TileData> | null {
   const tile = board[rank * 8 + file];
-  let checkBlocks = new Set<TileData>();
   if (
     !tile.piece || // check if tile has a piece
     tile.piece.type !== "king" || // check if the piece is a king
@@ -68,19 +85,19 @@ export function checkBlocks(
     return null;
 
   const king = tile.piece!;
-  for (const attacker of tile.attackers) {
-    if (attacker.color !== king.color) {
-      checkBlocks = new Set([
-        ...checkBlocks,
-        ...blockingMoves(
-          board,
-          [king.rank, king.file],
-          [attacker.rank, attacker.file]
-        ),
-      ]);
-    }
-  }
-  return checkBlocks;
+
+  // Check if king is attacked by multiple pieces
+  const attackers = Array.from(tile.attackers).filter(
+    (attacker: PieceData) => attacker.color !== king.color
+  );
+  if (attackers.length > 1) return new Set();
+
+  // Calculate block filter
+  return blockingMoves(
+    board,
+    [king.rank, king.file],
+    [attackers[0].rank, attackers[1].file]
+  );
 }
 
 function castlingMoves(board: TileData[], king: PieceData): Set<TileData> {

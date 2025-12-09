@@ -171,7 +171,7 @@ export function filterMoves(
 }
 
 /**
- * Determines all moves that can block a piece from attacking the king, assuming a straight line attack. Can also be used for any generic piece.
+ * Determines all moves that can block a piece from attacking the king, regardless of the type of piece. Can also be used for any generic piece.
  * @param board : TileData[]
  * @param kingPos : [dimension, dimension]
  * @param attackerPos : [dimension, dimension]
@@ -213,6 +213,8 @@ export function blockingMoves(
       j += fileDirection;
     }
   }
+
+  // If attacker is a knight, both cases fail - only blocking move is capturing knight itself
 
   return moves;
 }
@@ -356,6 +358,10 @@ function legalMoves(board: TileData[], piece: PieceData): Set<TileData> {
       moves.delete(board[piece.rank * 8 + 2]);
   }
   return moves;
+}
+
+export function board(rank: dimension, file: dimension): TileData {
+  return TILES[rank * 8 + file];
 }
 
 let pieceID = 0;

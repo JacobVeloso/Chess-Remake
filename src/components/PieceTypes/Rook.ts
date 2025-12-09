@@ -2,7 +2,7 @@ import type { dimension, PieceData, TileData } from "../types.ts";
 
 export function rookMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
-  const color = piece.color;
+  // const color = piece.color;
   piece.moves = new Set<TileData>();
   // if (checkBlocks && checkBlocks.size === 0) return piece.moves;
 
@@ -118,20 +118,26 @@ export function rookBlock(
       : ownFile > blockedFile
       ? -1
       : 1;
+  const includeCapture =
+    board[blockedRank * 8 + blockedFile].piece!.color !== piece.color;
 
+  const blockedMoves = new Set<TileData>();
   // Remove moves now blocked
   for (const move of piece.moves) {
     if (
+      (move.rank === blockedRank &&
+        move.file === blockedFile &&
+        !includeCapture) ||
       (ownRank === blockedRank &&
-        move.file * direction > ownFile * direction &&
         move.file * direction > blockedFile * direction) ||
       (ownFile === blockedFile &&
-        move.rank * direction > ownRank * direction &&
         move.rank * direction > blockedRank * direction)
-    )
+    ) {
       piece.moves.delete(move);
+      blockedMoves.add(move);
+    }
   }
-  return piece.moves;
+  return blockedMoves;
 }
 
 export function rookUnblock(
@@ -150,16 +156,18 @@ export function rookUnblock(
       ? -1
       : 1;
 
+  const unblockedMoves = new Set<TileData>();
   // Insert moves now possible
   if (ownRank === unblockedRank) {
     for (var i = unblockedFile; i >= 0 && i < 8; i += direction) {
       piece.moves.add(board[ownRank * 8 + i]);
+      unblockedMoves.add(board[ownRank * 8 + i]);
     }
   } else {
     for (var i = unblockedRank; i >= 0 && i < 8; i += direction) {
       piece.moves.add(board[i * 8 + ownFile]);
+      unblockedMoves.add(board[i * 8 + ownFile]);
     }
   }
-
-  return piece.moves;
+  return unblockedMoves;
 }

@@ -1,75 +1,75 @@
 import { describe, it, expect } from "vitest";
-import { board, getTile, makePiece, placePiece, setsEqual } from "../utilities";
+import { board, BOARD, makePiece, placePiece, setsEqual } from "../utilities";
 
 describe("queenMoves", () => {
   it("simple queen moves", () => {
     const queen = makePiece("queen", "white", 3, 3);
-    getTile(3, 3).piece = queen;
+    board(3, 3).piece = queen;
 
     const expected = new Set([
-      getTile(2, 3),
-      getTile(1, 3),
-      getTile(0, 3),
-      getTile(2, 4),
-      getTile(1, 5),
-      getTile(0, 6),
-      getTile(3, 4),
-      getTile(3, 5),
-      getTile(3, 6),
-      getTile(3, 7),
-      getTile(4, 4),
-      getTile(5, 5),
-      getTile(6, 6),
-      getTile(7, 7),
-      getTile(4, 3),
-      getTile(5, 3),
-      getTile(6, 3),
-      getTile(7, 3),
-      getTile(4, 2),
-      getTile(5, 1),
-      getTile(6, 0),
-      getTile(3, 2),
-      getTile(3, 1),
-      getTile(3, 0),
-      getTile(2, 2),
-      getTile(1, 1),
-      getTile(0, 0),
+      board(2, 3),
+      board(1, 3),
+      board(0, 3),
+      board(2, 4),
+      board(1, 5),
+      board(0, 6),
+      board(3, 4),
+      board(3, 5),
+      board(3, 6),
+      board(3, 7),
+      board(4, 4),
+      board(5, 5),
+      board(6, 6),
+      board(7, 7),
+      board(4, 3),
+      board(5, 3),
+      board(6, 3),
+      board(7, 3),
+      board(4, 2),
+      board(5, 1),
+      board(6, 0),
+      board(3, 2),
+      board(3, 1),
+      board(3, 0),
+      board(2, 2),
+      board(1, 1),
+      board(0, 0),
     ]);
 
-    queen.calcMoves(queen, board);
+    queen.calcMoves(queen, BOARD);
 
     expect(setsEqual(expected, queen.moves)).toBeTruthy();
   });
 
   it("queen moves off board", () => {
     const queen = makePiece("queen", "white", 0, 0);
-    getTile(0, 0).piece = queen;
+    board(0, 0).piece = queen;
 
     const expected = new Set([
-      getTile(0, 1),
-      getTile(0, 2),
-      getTile(0, 3),
-      getTile(0, 4),
-      getTile(0, 5),
-      getTile(0, 6),
-      getTile(0, 7),
-      getTile(1, 1),
-      getTile(2, 2),
-      getTile(3, 3),
-      getTile(4, 4),
-      getTile(5, 5),
-      getTile(6, 6),
-      getTile(7, 7),
-      getTile(1, 0),
-      getTile(2, 0),
-      getTile(3, 0),
-      getTile(4, 0),
-      getTile(5, 0),
-      getTile(6, 0),
-      getTile(7, 0),
+      board(0, 1),
+      board(0, 2),
+      board(0, 3),
+      board(0, 4),
+      board(0, 5),
+      board(0, 6),
+      board(0, 7),
+      board(1, 1),
+      board(2, 2),
+      board(3, 3),
+      board(4, 4),
+      board(5, 5),
+      board(6, 6),
+      board(7, 7),
+      board(1, 0),
+      board(2, 0),
+      board(3, 0),
+      board(4, 0),
+      board(5, 0),
+      board(6, 0),
+      board(7, 0),
     ]);
 
-    queen.calcMoves(queen, board);
+    queen.calcMoves(queen, BOARD);
 
     expect(setsEqual(expected, queen.moves)).toBeTruthy();
   });
@@ -78,128 +78,139 @@ describe("queenMoves", () => {
 describe("queenBlock", () => {
   it("block queen", () => {
     const queen = makePiece("queen", "white", 3, 0);
-    getTile(3, 0).piece = queen;
-    queen.moves.add(getTile(2, 1));
-    queen.moves.add(getTile(1, 2));
-    queen.moves.add(getTile(0, 3));
-    queen.moves.add(getTile(3, 1));
-    queen.moves.add(getTile(3, 2));
-    queen.moves.add(getTile(3, 3));
-    queen.moves.add(getTile(3, 4));
-    queen.moves.add(getTile(3, 5));
-    queen.moves.add(getTile(3, 6));
-    queen.moves.add(getTile(3, 7));
-    queen.moves.add(getTile(4, 1));
-    queen.moves.add(getTile(5, 2));
-    queen.moves.add(getTile(6, 3));
-    queen.moves.add(getTile(7, 4));
+    board(3, 0).piece = queen;
+    queen.moves.add(board(2, 1));
+    queen.moves.add(board(1, 2));
+    queen.moves.add(board(0, 3));
+    queen.moves.add(board(3, 1));
+    queen.moves.add(board(3, 2));
+    queen.moves.add(board(3, 3));
+    queen.moves.add(board(3, 4));
+    queen.moves.add(board(3, 5));
+    queen.moves.add(board(3, 6));
+    queen.moves.add(board(3, 7));
+    queen.moves.add(board(4, 1));
+    queen.moves.add(board(5, 2));
+    queen.moves.add(board(6, 3));
+    queen.moves.add(board(7, 4));
 
-    placePiece("pawn", "black", 1, 2);
+    placePiece("pawn", "white", 1, 2);
     placePiece("pawn", "black", 3, 4);
-    placePiece("pawn", "black", 5, 2);
+    placePiece("pawn", "white", 5, 2);
 
-    const expected = new Set([
-      getTile(2, 1),
-      getTile(1, 2),
-      getTile(3, 1),
-      getTile(3, 2),
-      getTile(3, 3),
-      getTile(3, 4),
-      getTile(4, 1),
-      getTile(5, 2),
+    const expectedMoves = new Set([
+      board(2, 1),
+      board(3, 1),
+      board(3, 2),
+      board(3, 3),
+      board(3, 4),
+      board(4, 1),
     ]);
 
-    queen.block(queen, board, [1, 2]);
-    queen.block(queen, board, [3, 4]);
-    queen.block(queen, board, [5, 2]);
+    const expectedBlocks1 = new Set([board(1, 2), board(0, 3)]);
+    const expectedBlocks2 = new Set([board(3, 5), board(3, 6), board(3, 7)]);
+    const expectedBlocks3 = new Set([board(5, 2), board(6, 3), board(7, 4)]);
 
-    expect(setsEqual(expected, queen.moves)).toBeTruthy();
+    expect(
+      setsEqual(expectedBlocks1, queen.block(queen, BOARD, [1, 2]))
+    ).toBeTruthy();
+    expect(
+      setsEqual(expectedBlocks2, queen.block(queen, BOARD, [3, 4]))
+    ).toBeTruthy();
+    expect(
+      setsEqual(expectedBlocks3, queen.block(queen, BOARD, [5, 2]))
+    ).toBeTruthy();
+
+    expect(setsEqual(expectedMoves, queen.moves)).toBeTruthy();
   });
 
   it("queen blocked one side", () => {
     const queen = makePiece("queen", "white", 0, 0);
-    getTile(3, 3).piece = queen;
-    queen.moves.add(getTile(0, 0));
-    queen.moves.add(getTile(1, 1));
-    queen.moves.add(getTile(2, 2));
-    queen.moves.add(getTile(4, 4));
-    queen.moves.add(getTile(5, 5));
-    queen.moves.add(getTile(6, 6));
-    queen.moves.add(getTile(7, 7));
+    board(3, 3).piece = queen;
+    queen.moves.add(board(0, 0));
+    queen.moves.add(board(1, 1));
+    queen.moves.add(board(2, 2));
+    queen.moves.add(board(4, 4));
+    queen.moves.add(board(5, 5));
+    queen.moves.add(board(6, 6));
+    queen.moves.add(board(7, 7));
 
-    placePiece("pawn", "black", 5, 5);
+    placePiece("pawn", "white", 5, 5);
 
-    const expected = new Set([
-      getTile(0, 0),
-      getTile(1, 1),
-      getTile(2, 2),
-      getTile(4, 4),
-      getTile(5, 5),
+    const expectedMoves = new Set([
+      board(0, 0),
+      board(1, 1),
+      board(2, 2),
+      board(4, 4),
     ]);
 
-    queen.block(queen, board, [5, 5]);
+    const expectedBlocks = new Set([board(5, 5), board(6, 6), board(7, 7)]);
 
-    expect(setsEqual(expected, queen.moves)).toBeTruthy();
+    expect(
+      setsEqual(expectedBlocks, queen.block(queen, BOARD, [5, 5]))
+    ).toBeTruthy();
+
+    expect(setsEqual(expectedMoves, queen.moves)).toBeTruthy();
   });
 });
 
 describe("queenUnblock", () => {
   it("unblock queen", () => {
     const queen = makePiece("queen", "white", 3, 0);
-    getTile(3, 0).piece = queen;
-    queen.moves.add(getTile(2, 1));
-    queen.moves.add(getTile(1, 2));
-    queen.moves.add(getTile(3, 1));
-    queen.moves.add(getTile(3, 2));
-    queen.moves.add(getTile(3, 3));
-    queen.moves.add(getTile(3, 4));
-    queen.moves.add(getTile(4, 1));
-    queen.moves.add(getTile(5, 2));
+    board(3, 0).piece = queen;
+    queen.moves.add(board(2, 1));
+    queen.moves.add(board(1, 2));
+    queen.moves.add(board(3, 1));
+    queen.moves.add(board(3, 2));
+    queen.moves.add(board(3, 3));
+    queen.moves.add(board(3, 4));
+    queen.moves.add(board(4, 1));
+    queen.moves.add(board(5, 2));
 
     const expected = new Set([
-      getTile(2, 1),
-      getTile(1, 2),
-      getTile(0, 3),
-      getTile(3, 1),
-      getTile(3, 2),
-      getTile(3, 3),
-      getTile(3, 4),
-      getTile(3, 5),
-      getTile(3, 6),
-      getTile(3, 7),
-      getTile(4, 1),
-      getTile(5, 2),
-      getTile(6, 3),
-      getTile(7, 4),
+      board(2, 1),
+      board(1, 2),
+      board(0, 3),
+      board(3, 1),
+      board(3, 2),
+      board(3, 3),
+      board(3, 4),
+      board(3, 5),
+      board(3, 6),
+      board(3, 7),
+      board(4, 1),
+      board(5, 2),
+      board(6, 3),
+      board(7, 4),
     ]);
 
-    queen.unblock(queen, board, [1, 2]);
-    queen.unblock(queen, board, [3, 4]);
-    queen.unblock(queen, board, [5, 2]);
+    queen.unblock(queen, BOARD, [1, 2]);
+    queen.unblock(queen, BOARD, [3, 4]);
+    queen.unblock(queen, BOARD, [5, 2]);
 
     expect(setsEqual(expected, queen.moves)).toBeTruthy();
   });
 
   it("queen unblocked one side", () => {
     const queen = makePiece("queen", "white", 0, 0);
-    getTile(3, 3).piece = queen;
-    queen.moves.add(getTile(0, 0));
-    queen.moves.add(getTile(1, 1));
-    queen.moves.add(getTile(2, 2));
-    queen.moves.add(getTile(4, 4));
-    queen.moves.add(getTile(5, 5));
+    board(3, 3).piece = queen;
+    queen.moves.add(board(0, 0));
+    queen.moves.add(board(1, 1));
+    queen.moves.add(board(2, 2));
+    queen.moves.add(board(4, 4));
+    queen.moves.add(board(5, 5));
 
     const expected = new Set([
-      getTile(0, 0),
-      getTile(1, 1),
-      getTile(2, 2),
-      getTile(4, 4),
-      getTile(5, 5),
-      getTile(6, 6),
-      getTile(7, 7),
+      board(0, 0),
+      board(1, 1),
+      board(2, 2),
+      board(4, 4),
+      board(5, 5),
+      board(6, 6),
+      board(7, 7),
     ]);
 
-    queen.unblock(queen, board, [5, 5]);
+    queen.unblock(queen, BOARD, [5, 5]);
 
     expect(setsEqual(expected, queen.moves)).toBeTruthy();
   });

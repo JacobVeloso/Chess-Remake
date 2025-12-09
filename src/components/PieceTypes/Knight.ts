@@ -46,9 +46,16 @@ export function knightBlock(
   board: TileData[],
   blockedPos: [dimension, dimension]
 ): Set<TileData> {
-  void board;
-  void blockedPos;
-  return piece.moves;
+  const attacker = board[blockedPos[0] * 8 + blockedPos[1]].piece!;
+  if (attacker.color === piece.color) {
+    for (const move of piece.moves) {
+      if (move.rank === blockedPos[0] && move.file === blockedPos[1]) {
+        piece.moves.delete(move);
+        return new Set<TileData>([move]);
+      }
+    }
+  }
+  return new Set();
 }
 
 export function knightUnblock(
@@ -56,7 +63,8 @@ export function knightUnblock(
   board: TileData[],
   unblockedPos: [dimension, dimension]
 ): Set<TileData> {
+  void piece;
   void board;
   void unblockedPos;
-  return piece.moves;
+  return new Set();
 }

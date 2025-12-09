@@ -1,24 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { board, getTile, makePiece, placePiece, setsEqual } from "../utilities";
+import { board, BOARD, makePiece, placePiece, setsEqual } from "../utilities";
 
 describe("kingMoves", () => {
   it("simple king moves", () => {
     const king = makePiece("king", "white", 3, 3);
 
-    getTile(3, 3).piece = king;
+    board(3, 3).piece = king;
 
     const expected = new Set([
-      getTile(2, 2),
-      getTile(2, 3),
-      getTile(2, 4),
-      getTile(3, 2),
-      getTile(3, 4),
-      getTile(4, 2),
-      getTile(4, 3),
-      getTile(4, 4),
+      board(2, 2),
+      board(2, 3),
+      board(2, 4),
+      board(3, 2),
+      board(3, 4),
+      board(4, 2),
+      board(4, 3),
+      board(4, 4),
     ]);
 
-    king.calcMoves(king, board);
+    king.calcMoves(king, BOARD);
     //expect(king.moves).toBeFalsy();
     expect(setsEqual(expected, king.moves)).toBeTruthy();
   });
@@ -26,44 +26,70 @@ describe("kingMoves", () => {
   it("king moves off board", () => {
     const king = makePiece("king", "white", 0, 0);
 
-    getTile(0, 0).piece = king;
+    board(0, 0).piece = king;
 
-    const expected = new Set([getTile(0, 1), getTile(1, 1), getTile(1, 0)]);
+    const expected = new Set([board(0, 1), board(1, 1), board(1, 0)]);
 
-    king.calcMoves(king, board);
+    king.calcMoves(king, BOARD);
 
     expect(setsEqual(expected, king.moves)).toBeTruthy();
   });
 
-  it("king castling", () => {});
+  it("king castling", () => {
+    const king = makePiece("king", "white", 7, 4);
+    board(7, 4).piece = king;
+
+    const leftRook = makePiece("rook", "white", 7, 0);
+    board(7, 0).piece = leftRook;
+
+    const rightRook = makePiece("rook", "white", 7, 7);
+    board(7, 7).piece = rightRook;
+
+    const expected = new Set([
+      board(6, 3),
+      board(6, 4),
+      board(6, 5),
+      board(7, 3),
+      board(7, 5),
+      board(7, 2),
+      board(7, 6),
+    ]);
+
+    king.calcMoves(king, BOARD);
+    expect(setsEqual(expected, king.moves)).toBeTruthy();
+  });
 });
 
 describe("kingBlock", () => {
   it("block king", () => {
     const king = makePiece("king", "white", 3, 3);
-    king.moves.add(getTile(2, 2));
-    king.moves.add(getTile(3, 2));
-    king.moves.add(getTile(4, 2));
-    king.moves.add(getTile(2, 3));
-    king.moves.add(getTile(4, 3));
-    king.moves.add(getTile(2, 4));
-    king.moves.add(getTile(3, 4));
-    king.moves.add(getTile(4, 4));
+    king.moves.add(board(2, 2));
+    king.moves.add(board(3, 2));
+    king.moves.add(board(4, 2));
+    king.moves.add(board(2, 3));
+    king.moves.add(board(4, 3));
+    king.moves.add(board(2, 4));
+    king.moves.add(board(3, 4));
+    king.moves.add(board(4, 4));
 
-    placePiece("rook", "black", 4, 2);
-    placePiece("rook", "black", 2, 4);
+    placePiece("rook", "white", 4, 2);
+    placePiece("rook", "white", 2, 4);
 
     const expected = new Set([
-      getTile(2, 2),
-      getTile(3, 2),
-      getTile(2, 3),
-      getTile(4, 3),
-      getTile(3, 4),
-      getTile(4, 4),
+      board(2, 2),
+      board(3, 2),
+      board(2, 3),
+      board(4, 3),
+      board(3, 4),
+      board(4, 4),
     ]);
 
-    king.block(king, board, [4, 2]);
-    king.block(king, board, [2, 4]);
+    expect(
+      setsEqual(new Set([board(4, 2)]), king.block(king, BOARD, [4, 2]))
+    ).toBeTruthy();
+    expect(
+      setsEqual(new Set([board(2, 4)]), king.block(king, BOARD, [2, 4]))
+    ).toBeTruthy();
 
     expect(setsEqual(expected, king.moves)).toBeTruthy();
   });
@@ -72,26 +98,28 @@ describe("kingBlock", () => {
 describe("kingUnblock", () => {
   it("unblock king", () => {
     const king = makePiece("king", "white", 3, 3);
-    king.moves.add(getTile(2, 2));
-    king.moves.add(getTile(3, 2));
-    king.moves.add(getTile(2, 3));
-    king.moves.add(getTile(4, 3));
-    king.moves.add(getTile(3, 4));
-    king.moves.add(getTile(4, 4));
+    king.moves.add(board(2, 2));
+    king.moves.add(board(3, 2));
+    king.moves.add(board(4, 2));
+    king.moves.add(board(2, 3));
+    king.moves.add(board(4, 3));
+    king.moves.add(board(2, 4));
+    king.moves.add(board(3, 4));
+    king.moves.add(board(4, 4));
 
     const expected = new Set([
-      getTile(2, 2),
-      getTile(3, 2),
-      getTile(4, 2),
-      getTile(2, 3),
-      getTile(4, 3),
-      getTile(2, 4),
-      getTile(3, 4),
-      getTile(4, 4),
+      board(2, 2),
+      board(3, 2),
+      board(4, 2),
+      board(2, 3),
+      board(4, 3),
+      board(2, 4),
+      board(3, 4),
+      board(4, 4),
     ]);
 
-    king.unblock(king, board, [4, 2]);
-    king.unblock(king, board, [2, 4]);
+    king.unblock(king, BOARD, [4, 2]);
+    king.unblock(king, BOARD, [2, 4]);
 
     expect(setsEqual(expected, king.moves)).toBeTruthy();
   });

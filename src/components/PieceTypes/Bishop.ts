@@ -95,18 +95,24 @@ export function bishopBlock(
   const [blockedRank, blockedFile] = blockedPos;
   const rankDirection = blockedRank > ownRank ? 1 : -1;
   const fileDirection = blockedFile > ownFile ? 1 : -1;
+  const includeCapture =
+    board[blockedRank * 8 + blockedFile].piece!.color !== piece.color;
 
+  const blockedMoves = new Set<TileData>();
   // Remove moves now blocked
   for (const move of piece.moves) {
     if (
-      move.rank * rankDirection > ownRank * rankDirection &&
-      move.rank * rankDirection > blockedRank * rankDirection &&
-      move.file * fileDirection > ownFile * fileDirection &&
-      move.file * fileDirection > blockedFile * fileDirection
-    )
+      (move.rank === blockedRank &&
+        move.file === blockedFile &&
+        !includeCapture) ||
+      (move.rank * rankDirection > blockedRank * rankDirection &&
+        move.file * fileDirection > blockedFile * fileDirection)
+    ) {
       piece.moves.delete(move);
+      blockedMoves.add(move);
+    }
   }
-  return piece.moves;
+  return blockedMoves;
 }
 
 export function bishopUnblock(
@@ -119,13 +125,15 @@ export function bishopUnblock(
   const rankDirection = unblockedRank > ownRank ? 1 : -1;
   const fileDirection = unblockedFile > ownFile ? 1 : -1;
 
+  const unblockedMoves = new Set<TileData>();
   // Insert moves now possible
   let i = unblockedRank;
   let j = unblockedFile;
   while (i >= 0 && i < 8 && j >= 0 && j < 8) {
     piece.moves.add(board[i * 8 + j]);
+    unblockedMoves.add(board[i * 8 + j]);
     i += rankDirection;
     j += fileDirection;
   }
-  return piece.moves;
+  return unblockedMoves;
 }

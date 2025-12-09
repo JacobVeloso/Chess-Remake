@@ -99,28 +99,34 @@ export function pawnBlock(
   blockedPos: [dimension, dimension]
 ): Set<TileData> {
   void board;
-  const [ownRank, ownFile] = [piece.rank, piece.file];
   const [blockedRank, blockedFile] = blockedPos;
   const color = piece.color;
   const canMoveTwo =
-    (color === "white" && ownRank === 6) ||
-    (color === "black" && ownRank === 1);
+    (color === "white" && piece.rank === 6) ||
+    (color === "black" && piece.rank === 1);
+
+  const blockedMoves = new Set<TileData>();
 
   // Remove moves now blocked
   for (const move of piece.moves) {
     // Remove blocked tile
-    if (move.file === blockedFile && move.rank === blockedRank)
+    if (move.file === blockedFile && move.rank === blockedRank) {
       piece.moves.delete(move);
+      blockedMoves.add(move);
+    }
+
     // Remove two square move if applicable
     else if (
       canMoveTwo && // check if pawn can move two
-      ownFile === blockedFile && // check that forward moves are blocked
-      Math.abs(ownRank - move.rank) === 2 // remove tile two spaces ahead
-    )
+      move.file === blockedFile && // check that move is forward
+      Math.abs(move.rank - piece.rank) === 2
+    ) {
       piece.moves.delete(move);
+      blockedMoves.add(move);
+    }
   }
 
-  return piece.moves;
+  return blockedMoves;
 }
 
 export function pawnUnblock(
