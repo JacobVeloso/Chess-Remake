@@ -72,33 +72,3 @@ describe("knightBlock", () => {
     expect(setsEqual(expectedMoves, knight.moves)).toBeTruthy();
   });
 });
-
-describe("knightUnblock", () => {
-  it("unblock knight", () => {
-    const knight = makePiece("knight", "white", 3, 3);
-    knight.moves.add(board(4, 1));
-    knight.moves.add(board(5, 2));
-    knight.moves.add(board(5, 4));
-    knight.moves.add(board(4, 5));
-    knight.moves.add(board(3, 5));
-    knight.moves.add(board(1, 4));
-    knight.moves.add(board(1, 2));
-    knight.moves.add(board(2, 1));
-
-    const expected = new Set([
-      board(4, 1),
-      board(5, 2),
-      board(5, 4),
-      board(4, 5),
-      board(3, 5),
-      board(1, 4),
-      board(1, 2),
-      board(2, 1),
-    ]);
-
-    knight.unblock(knight, BOARD, [4, 5]);
-    knight.unblock(knight, BOARD, [1, 2]);
-
-    expect(setsEqual(expected, knight.moves)).toBeTruthy();
-  });
-});

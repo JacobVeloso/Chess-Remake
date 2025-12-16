@@ -1,5 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { board, BOARD, makePiece, placePiece, setsEqual } from "../utilities";
+import { checkBlocks } from "../../components/PieceTypes/King";
+import { calculateAllMoves } from "../../components/Board";
 
 describe("kingMoves", () => {
   it("simple king moves", () => {
@@ -95,32 +97,20 @@ describe("kingBlock", () => {
   });
 });
 
-describe("kingUnblock", () => {
-  it("unblock king", () => {
-    const king = makePiece("king", "white", 3, 3);
-    king.moves.add(board(2, 2));
-    king.moves.add(board(3, 2));
-    king.moves.add(board(4, 2));
-    king.moves.add(board(2, 3));
-    king.moves.add(board(4, 3));
-    king.moves.add(board(2, 4));
-    king.moves.add(board(3, 4));
-    king.moves.add(board(4, 4));
+describe("checkBlocks", () => {
+  it("calculate check blocks", () => {
+    const rook = makePiece("rook", "white", 3, 3);
+    board(3, 3).piece = rook;
+    const king = makePiece("king", "black", 3, 6);
+    board(3, 6).piece = king;
 
-    const expected = new Set([
-      board(2, 2),
-      board(3, 2),
-      board(4, 2),
-      board(2, 3),
-      board(4, 3),
-      board(2, 4),
-      board(3, 4),
-      board(4, 4),
-    ]);
+    calculateAllMoves(BOARD, new Set([rook, king]));
 
-    king.unblock(king, BOARD, [4, 2]);
-    king.unblock(king, BOARD, [2, 4]);
+    const expectedBlocks = new Set([board(3, 3), board(3, 4), board(3, 5)]);
 
-    expect(setsEqual(expected, king.moves)).toBeTruthy();
+    const blocks = checkBlocks(BOARD, 3, 6);
+
+    expect(blocks).toBeTruthy();
+    expect(setsEqual(expectedBlocks, blocks!)).toBeTruthy();
   });
 });

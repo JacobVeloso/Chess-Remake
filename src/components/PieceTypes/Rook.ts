@@ -108,32 +108,25 @@ export function rookBlock(
   blockedPos: [dimension, dimension]
 ): Set<TileData> {
   void board;
-  const [ownRank, ownFile] = [piece.rank, piece.file];
   const [blockedRank, blockedFile] = blockedPos;
   const direction =
-    ownRank > blockedRank
+    piece.rank > blockedRank
       ? -1
-      : ownRank < blockedRank
+      : piece.rank < blockedRank
       ? 1
-      : ownFile > blockedFile
+      : piece.file > blockedFile
       ? -1
       : 1;
-  const includeCapture =
-    board[blockedRank * 8 + blockedFile].piece!.color !== piece.color;
 
   const blockedMoves = new Set<TileData>();
   // Remove moves now blocked
   for (const move of piece.moves) {
     if (
-      (move.rank === blockedRank &&
-        move.file === blockedFile &&
-        !includeCapture) ||
-      (ownRank === blockedRank &&
+      (piece.rank === blockedRank &&
         move.file * direction > blockedFile * direction) ||
-      (ownFile === blockedFile &&
+      (piece.file === blockedFile &&
         move.rank * direction > blockedRank * direction)
     ) {
-      piece.moves.delete(move);
       blockedMoves.add(move);
     }
   }
@@ -145,29 +138,38 @@ export function rookUnblock(
   board: TileData[],
   unblockedPos: [dimension, dimension]
 ): Set<TileData> {
-  const [ownRank, ownFile] = [piece.rank, piece.file];
   const [unblockedRank, unblockedFile] = unblockedPos;
   const direction =
-    ownRank > unblockedRank
+    piece.rank > unblockedRank
       ? -1
-      : ownRank < unblockedRank
+      : piece.rank < unblockedRank
       ? 1
-      : ownFile > unblockedFile
+      : piece.file > unblockedFile
       ? -1
       : 1;
 
   const unblockedMoves = new Set<TileData>();
+
   // Insert moves now possible
-  if (ownRank === unblockedRank) {
-    for (var i = unblockedFile; i >= 0 && i < 8; i += direction) {
-      piece.moves.add(board[ownRank * 8 + i]);
-      unblockedMoves.add(board[ownRank * 8 + i]);
+  if (piece.rank === unblockedRank) {
+    for (
+      let i = unblockedFile;
+      i >= 0 &&
+      i < 8 &&
+      !board[(piece.rank - direction) * 8 + (i - direction)].piece;
+      i += direction
+    ) {
+      unblockedMoves.add(board[piece.rank * 8 + i]);
     }
   } else {
-    for (var i = unblockedRank; i >= 0 && i < 8; i += direction) {
-      piece.moves.add(board[i * 8 + ownFile]);
-      unblockedMoves.add(board[i * 8 + ownFile]);
+    for (
+      let i = unblockedRank;
+      i >= 0 && i < 8 && !board[(i - direction) * 8 + (piece.file - direction)];
+      i += direction
+    ) {
+      unblockedMoves.add(board[i * 8 + piece.file]);
     }
   }
+
   return unblockedMoves;
 }

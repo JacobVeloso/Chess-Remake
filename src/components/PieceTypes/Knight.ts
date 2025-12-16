@@ -57,14 +57,3 @@ export function knightBlock(
   }
   return new Set();
 }
-
-export function knightUnblock(
-  piece: PieceData,
-  board: TileData[],
-  unblockedPos: [dimension, dimension]
-): Set<TileData> {
-  void piece;
-  void board;
-  void unblockedPos;
-  return new Set();
-}

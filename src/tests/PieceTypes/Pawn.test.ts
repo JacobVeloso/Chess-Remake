@@ -38,9 +38,9 @@ describe("pawnMoves", () => {
   it("pawn capture", () => {
     const pawn = makePiece("pawn", "white", 3, 3);
     board(3, 3).piece = pawn;
-    placePiece("pawn", "black", 2, 4);
+    placePiece("pawn", "black", 2, 2);
 
-    const expected = new Set([board(2, 3), board(2, 4)]);
+    const expected = new Set([board(2, 3), board(2, 2)]);
 
     pawn.calcMoves(pawn, BOARD);
 
@@ -116,38 +116,5 @@ describe("pawnBlock", () => {
     ).toBeTruthy();
 
     expect(pawn.moves.size).toBe(0);
-  });
-});
-
-describe("pawnUnblock", () => {
-  it("simple pawn unblock", () => {
-    const pawn = makePiece("pawn", "white", 3, 3);
-
-    const expected = new Set([board(2, 3)]);
-
-    pawn.unblock(pawn, BOARD, [2, 3]);
-
-    expect(setsEqual(expected, pawn.moves)).toBeTruthy();
-  });
-
-  it("pawn unblock two squares ahead", () => {
-    const pawn = makePiece("pawn", "white", 6, 3);
-    pawn.moves.add(board(5, 3));
-
-    const expected = new Set([board(5, 3), board(4, 3)]);
-
-    pawn.unblock(pawn, BOARD, [4, 3]);
-
-    expect(setsEqual(expected, pawn.moves)).toBeTruthy();
-  });
-
-  it("pawn unblock one square ahead", () => {
-    const pawn = makePiece("pawn", "white", 6, 3);
-
-    const expected = new Set([board(5, 3), board(4, 3)]);
-
-    pawn.unblock(pawn, BOARD, [5, 3]);
-
-    expect(setsEqual(expected, pawn.moves)).toBeTruthy();
   });
 });

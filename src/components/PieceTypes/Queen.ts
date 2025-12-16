@@ -1,6 +1,6 @@
 import type { dimension, PieceData, TileData } from "../types.ts";
-import { bishopMoves, bishopBlock, bishopUnblock } from "./Bishop.ts";
-import { rookMoves, rookBlock, rookUnblock } from "./Rook.ts";
+import { bishopMoves, bishopBlock } from "./Bishop.ts";
+import { rookMoves, rookBlock } from "./Rook.ts";
 
 export function queenMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   piece.moves = new Set<TileData>([
@@ -15,12 +15,14 @@ export function queenBlock(
   board: TileData[],
   blockedPos: [dimension, dimension]
 ): Set<TileData> {
-  const [rank, file] = [piece.rank, piece.file];
+  const [blockedRank, blockedFile] = blockedPos;
   // straight
-  if (rank === blockedPos[0] || file === blockedPos[1])
+  if (piece.rank === blockedRank || piece.file === blockedFile)
     return rookBlock(piece, board, blockedPos);
   // diagonal
-  else if (Math.abs(blockedPos[0] - rank) === Math.abs(blockedPos[1] - file))
+  else if (
+    Math.abs(blockedRank - piece.rank) === Math.abs(blockedFile - piece.file)
+  )
     return bishopBlock(piece, board, blockedPos);
 
   // TODO error
@@ -32,15 +34,16 @@ export function queenUnblock(
   board: TileData[],
   unblockedPos: [dimension, dimension]
 ): Set<TileData> {
-  const [rank, file] = [piece.rank, piece.file];
+  const [unblockedRank, unblockedFile] = unblockedPos;
   // straight
-  if (rank === unblockedPos[0] || file === unblockedPos[1])
-    return rookUnblock(piece, board, unblockedPos);
+  if (piece.rank === unblockedRank || piece.file === unblockedFile)
+    return rookBlock(piece, board, unblockedPos);
   // diagonal
   else if (
-    Math.abs(unblockedPos[0] - rank) === Math.abs(unblockedPos[1] - file)
+    Math.abs(unblockedRank - piece.rank) ===
+    Math.abs(unblockedFile - piece.file)
   )
-    return bishopUnblock(piece, board, unblockedPos);
+    return bishopBlock(piece, board, unblockedPos);
 
   // TODO error
   return new Set<TileData>();

@@ -100,30 +100,21 @@ export function pawnBlock(
 ): Set<TileData> {
   void board;
   const [blockedRank, blockedFile] = blockedPos;
-  const color = piece.color;
   const canMoveTwo =
-    (color === "white" && piece.rank === 6) ||
-    (color === "black" && piece.rank === 1);
+    (piece.color === "white" && piece.rank === 6) ||
+    (piece.color === "black" && piece.rank === 1);
 
   const blockedMoves = new Set<TileData>();
 
   // Remove moves now blocked
   for (const move of piece.moves) {
-    // Remove blocked tile
-    if (move.file === blockedFile && move.rank === blockedRank) {
-      piece.moves.delete(move);
-      blockedMoves.add(move);
-    }
-
     // Remove two square move if applicable
-    else if (
+    if (
       canMoveTwo && // check if pawn can move two
       move.file === blockedFile && // check that move is forward
-      Math.abs(move.rank - piece.rank) === 2
-    ) {
-      piece.moves.delete(move);
+      Math.abs(piece.rank - blockedRank) === 1
+    )
       blockedMoves.add(move);
-    }
   }
 
   return blockedMoves;
@@ -134,23 +125,21 @@ export function pawnUnblock(
   board: TileData[],
   unblockedPos: [dimension, dimension]
 ): Set<TileData> {
-  const [ownRank, ownFile] = [piece.rank, piece.file];
   const [unblockedRank, unblockedFile] = unblockedPos;
-  const color = piece.color;
-  const direction = color === "white" ? -1 : 1;
+  const direction = piece.color === "white" ? -1 : 1;
   const canMoveTwo =
-    (color === "white" && ownRank === 6) ||
-    (color === "black" && ownRank === 1);
+    (piece.color === "white" && piece.rank === 6) ||
+    (piece.color === "black" && piece.rank === 1);
 
-  // Insert moves now possible
-  if (unblockedFile === ownFile) {
-    piece.moves.add(board[unblockedRank * 8 + unblockedFile]);
-    if (canMoveTwo && Math.abs(ownRank - unblockedRank) === 1) {
-      piece.moves.add(
-        board[(unblockedRank + 1 * direction) * 8 + unblockedFile]
-      );
-    }
-  }
+  const unblockedMoves = new Set<TileData>();
 
-  return piece.moves;
+  // Insert two square move if possible
+  if (
+    canMoveTwo &&
+    piece.file === unblockedFile &&
+    Math.abs(piece.rank - unblockedRank) === 1
+  )
+    unblockedMoves.add(board[(unblockedRank + direction) * 8 + unblockedFile]);
+
+  return unblockedMoves;
 }

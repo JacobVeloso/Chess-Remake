@@ -6,7 +6,12 @@ import {
   filterMoves,
   blockingMoves,
   removeAttacks,
+  calculateAllMoves,
+  filterBlocked,
+  checkFilter,
+  pinFilter,
 } from "../components/Board.tsx";
+import { checkBlocks } from "../components/PieceTypes/King.ts";
 
 describe("pinBlocks", () => {
   it("Horizontal pin", () => {
@@ -215,5 +220,127 @@ describe("removeAttacks", () => {
     BOARD.forEach((tile) => {
       expect(tile.attackers.size).toBe(0);
     });
+  });
+});
+
+describe("calculateAllMoves", () => {
+  it("no interactions - pawn, knight, king", () => {
+    const pawn = makePiece("pawn", "white", 6, 5);
+    board(6, 5).piece = pawn;
+    const king = makePiece("king", "white", 0, 7);
+    board(0, 7).piece = king;
+    const knight = makePiece("knight", "black", 3, 2);
+    board(3, 2).piece = knight;
+
+    const pieces = new Set([pawn, king, knight]);
+
+    const expectedPawnMoves = new Set([board(5, 5), board(4, 5)]);
+    const expectedKingMoves = new Set([board(0, 6), board(1, 6), board(1, 7)]);
+    const expectedKnightMoves = new Set([
+      board(1, 3),
+      board(2, 4),
+      board(4, 4),
+      board(5, 3),
+      board(5, 1),
+      board(4, 0),
+      board(2, 0),
+      board(1, 1),
+    ]);
+
+    calculateAllMoves(BOARD, pieces);
+
+    expect(setsEqual(expectedPawnMoves, pawn.moves)).toBeTruthy();
+    expect(setsEqual(expectedKingMoves, king.moves)).toBeTruthy();
+    expect(setsEqual(expectedKnightMoves, knight.moves)).toBeTruthy();
+
+    expectedPawnMoves.forEach((move) => {
+      expect(move.attackers.has(pawn)).toBeTruthy();
+    });
+    expectedKingMoves.forEach((move) => {
+      expect(move.attackers.has(king)).toBeTruthy();
+    });
+    expectedKnightMoves.forEach((move) => {
+      expect(move.attackers.has(knight)).toBeTruthy();
+    });
+  });
+});
+
+describe("filterBlocked", () => {
+  it("block rook", () => {
+    const rook = makePiece("rook", "white", 3, 3);
+    board(3, 3).piece = rook;
+    const leftPawn = makePiece("pawn", "white", 3, 1);
+    board(3, 1).piece = leftPawn;
+    const rightPawn = makePiece("pawn", "white", 3, 5);
+    board(3, 5).piece = rightPawn;
+
+    calculateAllMoves(BOARD, new Set([rook, leftPawn, rightPawn]));
+
+    const expectedMoves = new Set([
+      board(3, 2),
+      board(3, 4),
+      board(0, 3),
+      board(1, 3),
+      board(2, 3),
+      board(4, 3),
+      board(5, 3),
+      board(6, 3),
+      board(7, 3),
+    ]);
+
+    filterBlocked(BOARD);
+
+    expect(setsEqual(expectedMoves, rook.moves)).toBeTruthy();
+    expect(board(3, 1).attackers.size).toBe(0);
+    expect(board(3, 0).attackers.size).toBe(0);
+    expect(board(3, 5).attackers.size).toBe(0);
+    expect(board(3, 6).attackers.size).toBe(0);
+    expect(board(3, 7).attackers.size).toBe(0);
+  });
+});
+
+describe("checkFilter", () => {
+  it("simple check filter", () => {
+    const king = makePiece("king", "white", 5, 3);
+    board(5, 3).piece = king;
+    const rook = makePiece("rook", "white", 3, 1);
+    board(3, 1).piece = rook;
+    const queen = makePiece("queen", "black", 1, 3);
+    board(1, 3).piece = queen;
+
+    calculateAllMoves(BOARD, new Set([king, rook, queen]));
+
+    const expectedMoves = new Set([board(3, 3)]);
+
+    const blocks = checkBlocks(BOARD, 5, 3);
+    if (blocks !== null) {
+      checkFilter(BOARD, blocks, "white");
+    } else {
+      expect(false, "blocks was null").toBeTruthy();
+      return;
+    }
+    expect(setsEqual(expectedMoves, rook.moves));
+    expect(board(3, 2).attackers.size).toBe(0);
+  });
+});
+
+describe("pinFilter", () => {
+  it("simple pin filter", () => {
+    const king = makePiece("king", "white", 3, 5);
+    board(3, 5).piece = king;
+    const rook = makePiece("rook", "white", 3, 3);
+    board(3, 3).piece = rook;
+    const queen = makePiece("queen", "black", 3, 1);
+    board(3, 1).piece = queen;
+
+    const pieces = new Set([king, rook, queen]);
+
+    calculateAllMoves(BOARD, pieces);
+
+    const expectedMoves = new Set([board(3, 1), board(3, 2), board(3, 4)]);
+
+    pinFilter(BOARD, pieces, [3, 5]);
+
+    expect(setsEqual(expectedMoves, rook.moves));
   });
 });

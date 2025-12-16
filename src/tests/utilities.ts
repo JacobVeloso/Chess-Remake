@@ -7,36 +7,12 @@ import type {
   color,
   dimension,
 } from "../components/types.ts";
-import {
-  pawnMoves,
-  pawnBlock,
-  pawnUnblock,
-} from "../components/PieceTypes/Pawn.ts";
-import {
-  rookMoves,
-  rookBlock,
-  rookUnblock,
-} from "../components/PieceTypes/Rook.ts";
-import {
-  knightMoves,
-  knightBlock,
-  knightUnblock,
-} from "../components/PieceTypes/Knight.ts";
-import {
-  bishopMoves,
-  bishopBlock,
-  bishopUnblock,
-} from "../components/PieceTypes/Bishop.ts";
-import {
-  queenMoves,
-  queenBlock,
-  queenUnblock,
-} from "../components/PieceTypes/Queen.ts";
-import {
-  kingMoves,
-  kingBlock,
-  kingUnblock,
-} from "../components/PieceTypes/King.ts";
+import { pawnMoves, pawnBlock } from "../components/PieceTypes/Pawn.ts";
+import { rookMoves, rookBlock } from "../components/PieceTypes/Rook.ts";
+import { knightMoves, knightBlock } from "../components/PieceTypes/Knight.ts";
+import { bishopMoves, bishopBlock } from "../components/PieceTypes/Bishop.ts";
+import { queenMoves, queenBlock } from "../components/PieceTypes/Queen.ts";
+import { kingMoves, kingBlock } from "../components/PieceTypes/King.ts";
 
 export const BOARD: TileData[] = new Array(64);
 for (let i = 0; i < 64; ++i) {
@@ -74,7 +50,6 @@ export function makePiece(
         moves: new Set(),
         calcMoves: pawnMoves,
         block: pawnBlock,
-        unblock: pawnUnblock,
         params,
       };
     case "rook":
@@ -89,7 +64,6 @@ export function makePiece(
         moves: new Set(),
         calcMoves: rookMoves,
         block: rookBlock,
-        unblock: rookUnblock,
         params,
       };
     case "knight":
@@ -103,7 +77,6 @@ export function makePiece(
         moves: new Set(),
         calcMoves: knightMoves,
         block: knightBlock,
-        unblock: knightUnblock,
         params,
       };
     case "bishop":
@@ -117,7 +90,6 @@ export function makePiece(
         moves: new Set(),
         calcMoves: bishopMoves,
         block: bishopBlock,
-        unblock: bishopUnblock,
         params,
       };
     case "king":
@@ -132,7 +104,6 @@ export function makePiece(
         moves: new Set(),
         calcMoves: kingMoves,
         block: kingBlock,
-        unblock: kingUnblock,
         params,
       };
     default: // queen
@@ -146,7 +117,6 @@ export function makePiece(
         moves: new Set(),
         calcMoves: queenMoves,
         block: queenBlock,
-        unblock: queenUnblock,
         params,
       };
   }

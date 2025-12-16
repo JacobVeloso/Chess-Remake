@@ -28,7 +28,7 @@ const Tile = ({ tileData, active }: Props) => {
       className={
         "square-" + tileData.color[0] + " tile" + (active ? " attacked" : "")
       }
-      id={FILES[tileData.file - 1] + tileData.rank}
+      id={FILES[tileData.file] + tileData.rank}
     >
       {piece ? (
         <Piece

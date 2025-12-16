@@ -6,17 +6,6 @@ export type PieceData = {
   rank: dimension;
   file: dimension;
   moves: Set<TileData>;
-  calcMoves: (piece: PieceData, board: TileData[]) => Set<TileData>;
-  block: (
-    piece: PieceData,
-    board: TileData[],
-    blockedPos: [dimension, dimension]
-  ) => Set<TileData>;
-  unblock: (
-    piece: PieceData,
-    board: TileData[],
-    unblockedPos: [dimension, dimension]
-  ) => Set<TileData>;
   params: Map<string, boolean>;
 };
 
@@ -27,6 +16,20 @@ export type TileData = {
   color: color;
   piece: PieceData | null;
   attackers: Set<PieceData>;
+};
+
+export type BoardState = {
+  tiles: TileData[];
+  moveHistory: Move[];
+  whitePieces: Set<PieceData>;
+  blackPieces: Set<PieceData>;
+};
+
+export type Move = {
+  from: TileData["id"];
+  to: TileData["id"];
+  piece: PieceData;
+  capture?: PieceData;
 };
 
 export type type = "pawn" | "rook" | "knight" | "bishop" | "king" | "queen";

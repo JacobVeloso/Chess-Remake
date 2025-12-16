@@ -1,6 +1,6 @@
 import type { dimension, PieceData, TileData } from "../types.ts";
 import { isAttacked } from "../Tile.tsx";
-import { blockingMoves } from "../Board.tsx";
+import { blockingMoves } from "../Chess.ts";
 
 export function kingMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
@@ -54,23 +54,6 @@ export function kingBlock(
   return new Set();
 }
 
-export function kingUnblock(
-  piece: PieceData,
-  board: TileData[],
-  unblockedPos: [dimension, dimension]
-): Set<TileData> {
-  // const [unblockedRank, unblockedFile] = unblockedPos;
-
-  // // Insert move now unblocked
-  // piece.moves.add(board[unblockedRank * 8 + unblockedFile]);
-  // return piece.moves;
-
-  void piece;
-  void board;
-  void unblockedPos;
-  return new Set();
-}
-
 export function checkBlocks(
   board: TileData[],
   rank: dimension,
@@ -90,14 +73,17 @@ export function checkBlocks(
   const attackers = Array.from(tile.attackers).filter(
     (attacker: PieceData) => attacker.color !== king.color
   );
-  if (attackers.length > 1) return new Set();
+  if (attackers.length > 1) return king.moves;
 
   // Calculate block filter
-  return blockingMoves(
-    board,
-    [king.rank, king.file],
-    [attackers[0].rank, attackers[1].file]
-  );
+  return new Set([
+    ...blockingMoves(
+      board,
+      [king.rank, king.file],
+      [attackers[0].rank, attackers[0].file]
+    ),
+    ...king.moves,
+  ]);
 }
 
 function castlingMoves(board: TileData[], king: PieceData): Set<TileData> {
