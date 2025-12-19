@@ -2,17 +2,19 @@ import type { dimension, PieceData, TileData } from "../types.ts";
 
 function addMoves(
   board: TileData[],
-  piece: PieceData,
+  moves: Set<TileData>,
   [i, j]: [dimension, dimension],
   [iDir, jDir]: [1 | -1, 1 | -1]
 ): void {
-  while (i >= 0 && i < 8 && j >= 0 && j < 8) {
+  while (
+    i >= 0 &&
+    i < 8 &&
+    j >= 0 &&
+    j < 8 &&
+    !board[(i - 1) * 8 + (j - 1)].piece
+  ) {
     const index = i * 8 + j;
-    piece.moves.add(board[index]);
-    // // Piece blocking
-    // if (board[index].piece) {
-    //   break;
-    // }
+    moves.add(board[index]);
     i += iDir;
     j += jDir;
   }
@@ -23,47 +25,45 @@ export function bishopMoves(
   board: TileData[]
 ): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
-  piece.moves = new Set<TileData>();
+  const moves = new Set<TileData>();
 
   // Upper right diagonal
-  addMoves(
-    board,
-    piece,
-    [(rank - 1) as dimension, (file + 1) as dimension],
-    [-1, 1]
-  );
+  if (rank > 0 && file < 7)
+    addMoves(
+      board,
+      moves,
+      [(rank - 1) as dimension, (file + 1) as dimension],
+      [-1, 1]
+    );
 
   // Lower right diagonal
-  addMoves(
-    board,
-    piece,
-    [(rank + 1) as dimension, (file + 1) as dimension],
-    [1, 1]
-  );
+  if (rank < 7 && file < 7)
+    addMoves(
+      board,
+      moves,
+      [(rank + 1) as dimension, (file + 1) as dimension],
+      [1, 1]
+    );
 
   // Lower left diagonal
-  addMoves(
-    board,
-    piece,
-    [(rank + 1) as dimension, (file - 1) as dimension],
-    [1, -1]
-  );
+  if (rank < 7 && file > 0)
+    addMoves(
+      board,
+      moves,
+      [(rank + 1) as dimension, (file - 1) as dimension],
+      [1, -1]
+    );
 
   // Upper left diagonal
-  addMoves(
-    board,
-    piece,
-    [(rank - 1) as dimension, (file - 1) as dimension],
-    [-1, -1]
-  );
+  if (rank > 0 && file > 0)
+    addMoves(
+      board,
+      moves,
+      [(rank - 1) as dimension, (file - 1) as dimension],
+      [-1, -1]
+    );
 
-  // // Filter out moves that put king in check
-  // if (pinBlocks) filterMoves(piece.moves, pinBlocks);
-
-  // // Filter out moves that don't block check
-  // if (checkBlocks) filterMoves(piece.moves, checkBlocks);
-
-  return piece.moves;
+  return moves;
 }
 
 export function bishopBlock(
@@ -101,8 +101,8 @@ export function bishopUnblock(
   const unblockedMoves = new Set<TileData>();
 
   // Insert moves now possible
-  let i = unblockedRank;
-  let j = unblockedFile;
+  let i = unblockedRank + rankDirection;
+  let j = unblockedFile + fileDirection;
   while (
     i >= 0 &&
     i < 8 &&

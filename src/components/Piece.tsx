@@ -13,7 +13,7 @@ interface Props {
 const Piece = ({ id, color, type, src }: Props) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: id,
-    disabled: color === "white" ? !whiteCanMove : whiteCanMove,
+    //disabled: color === "white" ? !whiteCanMove : whiteCanMove,
   });
 
   const style = transform

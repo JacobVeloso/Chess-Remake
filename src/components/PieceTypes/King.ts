@@ -11,15 +11,14 @@ export function kingMoves(piece: PieceData, board: TileData[]): Set<TileData> {
     for (let j = file - 1; j <= file + 1; ++j) {
       if (j < 0 || j >= 8 || (i === rank && j === file)) continue;
       const tile = board[i * 8 + j];
-      // // Check that tile is empty and not attacked
-      // if (!tile.piece && !isAttacked(tile, piece.color))
       moves.add(tile);
     }
   }
 
   // Add castling moves where applicable
-  piece.moves = new Set([...moves, ...castlingMoves(board, piece)]);
-  return piece.moves;
+  const castles = castlingMoves(board, piece);
+  castles.forEach((move) => moves.add(move));
+  return moves;
 }
 
 export function kingBlock(

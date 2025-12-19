@@ -159,10 +159,12 @@ export function getPinBlocks(
 export function filterMoves(
   allMoves: Set<TileData>,
   allowedMoves: Set<TileData>
-): void {
+): Set<TileData> {
+  const filteredMoves = new Set<TileData>();
   for (const move of allMoves) {
-    if (!allowedMoves.has(move)) allMoves.delete(move);
+    if (allowedMoves.has(move)) filteredMoves.add(move);
   }
+  return filteredMoves;
 }
 
 export function joinMoves(
@@ -362,10 +364,15 @@ function legalMoves(board: TileData[], piece: PieceData): Set<TileData> {
   return moves;
 }
 
-export function filterCaptures(moves: Set<TileData>, pieceColor: color) {
+export function filterCaptures(
+  moves: Set<TileData>,
+  pieceColor: color
+): Set<TileData> {
+  const filteredMoves = new Set<TileData>();
   moves.forEach((move) => {
-    if (move.piece?.color === pieceColor) moves.delete(move);
+    if (move.piece?.color !== pieceColor) filteredMoves.add(move);
   });
+  return filteredMoves;
 }
 
 export function calculateLegalMoves(
@@ -380,15 +387,15 @@ export function calculateLegalMoves(
   const moves = new Map<PieceData["id"], Set<TileData["id"]>>();
 
   pieces.forEach((piece) => {
-    const pieceMoves = new Set<TileData>(piece.moves);
+    let pieceMoves = new Set<TileData>(piece.moves);
     const pinBlocks = getPinBlocks(
       board.tiles,
       [king.rank, king.file],
       [piece.rank, piece.file]
     );
-    if (blocks) filterMoves(pieceMoves, blocks);
-    if (pinBlocks) filterMoves(pieceMoves, pinBlocks);
-    filterCaptures(pieceMoves, turn);
+    if (blocks) pieceMoves = filterMoves(pieceMoves, blocks);
+    if (pinBlocks) pieceMoves = filterMoves(pieceMoves, pinBlocks);
+    pieceMoves = filterCaptures(pieceMoves, turn);
     // console.log("Moves for piece " + piece.id);
     // pieceMoves.forEach((move) => console.log(move.id));
     moves.set(
@@ -408,30 +415,60 @@ export function calculateLegalMoves(
 }
 
 export function applyMove(board: BoardState, move: Move): BoardState {
-  const updated = structuredClone(board);
-  updated.tiles.forEach((tile) => {
-    tile.attackers.clear();
-  });
+  const updatedBoard = { ...board };
+  const updatedPiece = { ...move.piece };
+  const updatedPieces =
+    updatedPiece.color === "white"
+      ? updatedBoard.whitePieces
+      : updatedBoard.blackPieces;
+  for (const piece of updatedPieces) {
+    if (piece.id === updatedPiece.id) {
+      updatedPieces.delete(piece);
+      break;
+    }
+  }
+  updatedPieces.add(updatedPiece);
+  // updated.tiles.forEach((tile) => {
+  //   tile.attackers.clear();
+  // });
 
   // TODO: check for en passant or castling
 
   // Move piece and record move
-  updated.tiles[+move.from].piece = null;
-  updated.tiles[+move.to].piece = move.piece;
-  updated.moveHistory.push(move);
+  const sourceTile = updatedBoard.tiles[+move.from];
+  const targetTile = updatedBoard.tiles[+move.to];
+  updatedBoard.tiles[+move.from].piece = null;
+  targetTile.piece = updatedPiece;
+  updatedBoard.moveHistory.push(move);
+
+  // Update position of piece and recalculate possible moves
+  updatedPiece.rank = targetTile.rank;
+  updatedPiece.file = targetTile.file;
+  calculateMoves(updatedPiece, updatedBoard.tiles);
 
   // Recalculate possible moves for pieces interacting with source & target tiles
-  unblockMoves(move.piece, board.tiles, [
-    updated.tiles[+move.from].rank,
-    updated.tiles[+move.from].file,
-  ]);
+  sourceTile.attackers.forEach((piece) => {
+    unblockMoves(piece, updatedBoard.tiles, [sourceTile.rank, sourceTile.file]);
+  });
 
-  blockMoves(move.piece, board.tiles, [
-    updated.tiles[+move.to].rank,
-    updated.tiles[+move.to].file,
-  ]);
+  targetTile.attackers.forEach((piece) => {
+    blockMoves(piece, updatedBoard.tiles, [targetTile.rank, targetTile.file]);
+  });
 
-  return updated;
+  // console.log("NEW PIECE MOVES " + updatedPiece.id);
+  // updatedPiece.moves.forEach((move) => {
+  //   console.log(move.id);
+  // });
+  // console.log("SOURCE TILE ATTACKERS " + sourceTile.id);
+  // sourceTile.attackers.forEach((piece) => {
+  //   console.log(piece.id);
+  // });
+  // console.log("TARGET TILE ATTACKERS " + targetTile.id);
+  // targetTile.attackers.forEach((piece) => {
+  //   console.log(piece.id);
+  // });
+
+  return updatedBoard;
 }
 
 /**
@@ -567,9 +604,12 @@ export function nextGameState(
 //   return TILES[rank * 8 + file];
 // }
 
-export function getHighlightedTiles(piece: PieceData): boolean[] {
+export function getHighlightedTiles(
+  moves: Map<PieceData["id"], Set<TileData["id"]>>,
+  pieceID: PieceData["id"]
+): boolean[] {
   const tiles = Array(64).fill(false);
-  piece.moves.forEach((move) => (tiles[move.rank * 8 + move.file] = true));
+  moves.get(pieceID)?.forEach((move) => (tiles[+move] = true));
   return tiles;
 }
 
@@ -594,42 +634,28 @@ function getInitialMoves(): Map<PieceData["id"], Set<TileData["id"]>> {
 
 function useChess(initialBoard: BoardState) {
   const [board, setBoard] = useState<BoardState>(initialBoard);
-  const [moves, setMoves] = useState<Map<PieceData["id"], Set<TileData["id"]>>>(
-    //getInitialMoves()
-    new Map()
-  ); // board stores all possible moves, 'moves' var stores legal moves (accounting for pins & checks)
-  const [turn, nextTurn] = useState<color>("white");
   const [actives, setActive] = useState<boolean[]>(new Array(64).fill(false));
-
-  // Recalculate legal moves when changing turns
-  useEffect(() => {
-    setMoves(calculateLegalMoves(board, turn));
-  }, [turn]);
+  const [turn, nextTurn] = useState<color>("white");
 
   // Attempt to move piece on board and recalculate moves if successful
-  const movePiece = useCallback(
-    (
-      from: TileData["id"],
-      to: TileData["id"],
-      piece: PieceData,
-      capture?: PieceData
-    ) => {
-      //   for (const key of moves.keys()) {
-      //     console.log(key + ": " + moves.get(key));
-      //     moves.get(key)?.forEach((move) => {
-      //       console.log("move: " + move);
-      //     });
-      //   }
-      if (moves.get(piece.id)?.has(to)) {
-        console.log("gonna move the piece now!!");
-        const move: Move = { from, to, piece, capture };
-        setBoard(applyMove(board, move));
-        nextTurn(turn === "white" ? "black" : "white");
-      }
-    },
-    [board, moves]
-  );
-  return { board, moves, actives, setActive, movePiece };
+  const movePiece = (
+    move: Move,
+    legalMoves: Map<PieceData["id"], Set<TileData["id"]>>
+  ) => {
+    //   for (const key of moves.keys()) {
+    //     console.log(key + ": " + moves.get(key));
+    //     moves.get(key)?.forEach((move) => {
+    //       console.log("move: " + move);
+    //     });
+    //   }
+    if (legalMoves.get(move.piece.id)?.has(move.to)) {
+      // console.log("gonna move the piece now!!");
+      setBoard(applyMove(board, move));
+      nextTurn(turn === "white" ? "black" : "white");
+      return calculateLegalMoves(board, turn);
+    }
+  };
+  return { board, movePiece, actives, setActive, turn };
 }
 
 export default useChess;

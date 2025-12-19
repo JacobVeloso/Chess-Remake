@@ -3,11 +3,10 @@ import { bishopMoves, bishopBlock } from "./Bishop.ts";
 import { rookMoves, rookBlock } from "./Rook.ts";
 
 export function queenMoves(piece: PieceData, board: TileData[]): Set<TileData> {
-  piece.moves = new Set<TileData>([
+  return new Set<TileData>([
     ...bishopMoves(piece, board),
     ...rookMoves(piece, board),
   ]);
-  return piece.moves;
 }
 
 export function queenBlock(

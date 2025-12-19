@@ -31,17 +31,14 @@ import {
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-
-const pieceIds = new Map<PieceData["id"], PieceData>();
-const tileIds = new Map<TileData["id"], TileData>();
-
-const PIECES: Set<PieceData> = new Set();
-const WHITE_PIECES: Set<PieceData> = new Set();
-const BLACK_PIECES: Set<PieceData> = new Set();
+import { useEffect } from "react";
 
 export let whiteCanMove = true;
 
 function setupInitialBoard(): BoardState {
+  const tileIds = new Map<TileData["id"], TileData>();
+  const WHITE_PIECES: Set<PieceData> = new Set();
+  const BLACK_PIECES: Set<PieceData> = new Set();
   let pieceID = 0;
   let tileID = 0;
   // Initialise tiles array
@@ -189,8 +186,6 @@ function setupInitialBoard(): BoardState {
           piece = null;
       }
       if (piece) {
-        PIECES.add(piece);
-        pieceIds.set(piece.id, piece);
         if (piece.color === "white") WHITE_PIECES.add(piece);
         else BLACK_PIECES.add(piece);
       }
@@ -226,6 +221,31 @@ function setupInitialBoard(): BoardState {
     }
   }
 
+  // Set rook moves
+  const leftBlackRook = TILES[0 * 8 + 0].piece!;
+  TILES[0 * 8 + 1].attackers.add(leftBlackRook);
+  TILES[1 * 8 + 0].attackers.add(leftBlackRook);
+  leftBlackRook.moves.add(TILES[0 * 8 + 1]);
+  leftBlackRook.moves.add(TILES[1 * 8 + 0]);
+
+  const rightBlackRook = TILES[0 * 8 + 7].piece!;
+  TILES[0 * 8 + 6].attackers.add(rightBlackRook);
+  TILES[1 * 8 + 7].attackers.add(rightBlackRook);
+  rightBlackRook.moves.add(TILES[0 * 8 + 6]);
+  rightBlackRook.moves.add(TILES[1 * 8 + 7]);
+
+  const leftWhiteRook = TILES[7 * 8 + 0].piece!;
+  TILES[7 * 8 + 1].attackers.add(leftWhiteRook);
+  TILES[6 * 8 + 0].attackers.add(leftWhiteRook);
+  leftWhiteRook.moves.add(TILES[7 * 8 + 1]);
+  leftWhiteRook.moves.add(TILES[6 * 8 + 0]);
+
+  const rightWhiteRook = TILES[7 * 8 + 7].piece!;
+  TILES[7 * 8 + 6].attackers.add(rightWhiteRook);
+  TILES[6 * 8 + 7].attackers.add(rightWhiteRook);
+  rightWhiteRook.moves.add(TILES[7 * 8 + 6]);
+  rightWhiteRook.moves.add(TILES[6 * 8 + 7]);
+
   // Set knight moves
   const leftBlackKnight = TILES[0 * 8 + 1].piece!;
   TILES[2 * 8 + 0].attackers.add(leftBlackKnight);
@@ -251,6 +271,81 @@ function setupInitialBoard(): BoardState {
   rightWhiteKnight.moves.add(TILES[5 * 8 + 5]);
   rightWhiteKnight.moves.add(TILES[5 * 8 + 7]);
 
+  // Set bishop moves
+  const leftBlackBishop = TILES[0 * 8 + 2].piece!;
+  TILES[1 * 8 + 1].attackers.add(leftBlackBishop);
+  TILES[1 * 8 + 3].attackers.add(leftBlackBishop);
+  leftBlackBishop.moves.add(TILES[1 * 8 + 1]);
+  leftBlackBishop.moves.add(TILES[1 * 8 + 3]);
+
+  const rightBlackBishop = TILES[0 * 8 + 5].piece!;
+  TILES[1 * 8 + 4].attackers.add(rightBlackBishop);
+  TILES[1 * 8 + 6].attackers.add(rightBlackBishop);
+  rightBlackBishop.moves.add(TILES[1 * 8 + 4]);
+  rightBlackBishop.moves.add(TILES[1 * 8 + 6]);
+
+  const leftWhiteBishop = TILES[7 * 8 + 2].piece!;
+  TILES[6 * 8 + 1].attackers.add(leftWhiteBishop);
+  TILES[6 * 8 + 3].attackers.add(leftWhiteBishop);
+  leftWhiteBishop.moves.add(TILES[6 * 8 + 1]);
+  leftWhiteBishop.moves.add(TILES[6 * 8 + 3]);
+
+  const rightWhiteBishop = TILES[7 * 8 + 5].piece!;
+  TILES[6 * 8 + 4].attackers.add(rightWhiteBishop);
+  TILES[6 * 8 + 6].attackers.add(rightWhiteBishop);
+  rightWhiteBishop.moves.add(TILES[6 * 8 + 4]);
+  rightWhiteBishop.moves.add(TILES[6 * 8 + 6]);
+
+  // Set queen moves
+  const blackQueen = TILES[0 * 8 + 3].piece!;
+  TILES[0 * 8 + 2].attackers.add(blackQueen);
+  TILES[1 * 8 + 2].attackers.add(blackQueen);
+  TILES[1 * 8 + 3].attackers.add(blackQueen);
+  TILES[1 * 8 + 4].attackers.add(blackQueen);
+  TILES[0 * 8 + 4].attackers.add(blackQueen);
+  blackQueen.moves.add(TILES[0 * 8 + 2]);
+  blackQueen.moves.add(TILES[1 * 8 + 2]);
+  blackQueen.moves.add(TILES[1 * 8 + 3]);
+  blackQueen.moves.add(TILES[1 * 8 + 4]);
+  blackQueen.moves.add(TILES[0 * 8 + 4]);
+
+  const whiteQueen = TILES[7 * 8 + 3].piece!;
+  TILES[7 * 8 + 2].attackers.add(whiteQueen);
+  TILES[6 * 8 + 2].attackers.add(whiteQueen);
+  TILES[6 * 8 + 3].attackers.add(whiteQueen);
+  TILES[6 * 8 + 4].attackers.add(whiteQueen);
+  TILES[7 * 8 + 4].attackers.add(whiteQueen);
+  whiteQueen.moves.add(TILES[7 * 8 + 2]);
+  whiteQueen.moves.add(TILES[6 * 8 + 2]);
+  whiteQueen.moves.add(TILES[6 * 8 + 3]);
+  whiteQueen.moves.add(TILES[6 * 8 + 4]);
+  whiteQueen.moves.add(TILES[7 * 8 + 4]);
+
+  // Set king moves
+  const blackKing = TILES[0 * 8 + 4].piece!;
+  TILES[0 * 8 + 3].attackers.add(blackKing);
+  TILES[1 * 8 + 3].attackers.add(blackKing);
+  TILES[1 * 8 + 4].attackers.add(blackKing);
+  TILES[1 * 8 + 5].attackers.add(blackKing);
+  TILES[0 * 8 + 5].attackers.add(blackKing);
+  blackKing.moves.add(TILES[0 * 8 + 3]);
+  blackKing.moves.add(TILES[1 * 8 + 3]);
+  blackKing.moves.add(TILES[1 * 8 + 4]);
+  blackKing.moves.add(TILES[1 * 8 + 5]);
+  blackKing.moves.add(TILES[0 * 8 + 5]);
+
+  const whiteKing = TILES[7 * 8 + 4].piece!;
+  TILES[7 * 8 + 3].attackers.add(whiteKing);
+  TILES[6 * 8 + 3].attackers.add(whiteKing);
+  TILES[6 * 8 + 4].attackers.add(whiteKing);
+  TILES[6 * 8 + 5].attackers.add(whiteKing);
+  TILES[7 * 8 + 5].attackers.add(whiteKing);
+  whiteKing.moves.add(TILES[7 * 8 + 3]);
+  whiteKing.moves.add(TILES[6 * 8 + 3]);
+  whiteKing.moves.add(TILES[6 * 8 + 4]);
+  whiteKing.moves.add(TILES[6 * 8 + 5]);
+  whiteKing.moves.add(TILES[7 * 8 + 5]);
+
   return {
     tiles: TILES,
     moveHistory: [],
@@ -259,10 +354,18 @@ function setupInitialBoard(): BoardState {
   };
 }
 
+function getPiece(board: TileData[], id: PieceData["id"]): PieceData | null {
+  for (const tile of board) {
+    if (tile.piece?.id === id) return tile.piece;
+  }
+  return null;
+}
+
 const Board = () => {
-  const { board, moves, actives, setActive, movePiece } = useChess(
+  const { board, movePiece, actives, setActive, turn } = useChess(
     setupInitialBoard()
   );
+  let moves = calculateLegalMoves(board, turn);
   // for (const key of moves.keys()) {
   //   console.log(key + ": " + moves.get(key));
   //   moves.get(key)?.forEach((move) => {
@@ -272,11 +375,18 @@ const Board = () => {
 
   function handleDragStart(event: DragStartEvent) {
     const pieceId = event.active.id as PieceData["id"];
-    const piece = pieceIds.get(pieceId);
-    if (piece) setActive(getHighlightedTiles(piece));
+    const piece = getPiece(board.tiles, pieceId);
+    if (piece) setActive(getHighlightedTiles(moves, pieceId));
   }
 
   function handleDragEnd(event: DragEndEvent) {
+    // console.log("MOVES");
+    // for (const key of moves.keys()) {
+    //   console.log(key + ": " + moves.get(key));
+    //   moves.get(key)?.forEach((move) => {
+    //     console.log("move: " + move);
+    //   });
+    // }
     setActive(new Array(64).fill(false));
     const { active, over } = event;
 
@@ -287,20 +397,24 @@ const Board = () => {
     const targetTileId = over.id as TileData["id"];
     const pieceId = active.id as PieceData["id"];
 
-    const piece = pieceIds.get(pieceId);
+    const piece = getPiece(board.tiles, pieceId);
     if (!piece) return;
     // console.log("piece found!");
     // Check if tile is a legal move for the piece
     if (moves.get(pieceId)?.has(targetTileId)) {
-      console.log("moving piece!");
+      // console.log("moving piece!");
       const sourceTileId = board.tiles[piece.rank * 8 + piece.file].id;
       const targetTile = board.tiles[+targetTileId];
-      movePiece(
-        sourceTileId,
-        targetTileId,
-        piece,
-        targetTile.piece ?? undefined
-      );
+      moves =
+        movePiece(
+          {
+            from: sourceTileId,
+            to: targetTileId,
+            piece,
+            capture: targetTile.piece ?? undefined,
+          },
+          moves
+        ) ?? new Map();
     }
 
     // // // Check that piece can access the tile

@@ -1,26 +1,9 @@
 import type { dimension, PieceData, TileData } from "../types.ts";
 
 export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
-  piece.moves = new Set<TileData>();
+  const moves = new Set<TileData>();
   const [rank, file] = [piece.rank, piece.file];
   const color = piece.color;
-  // if (checkBlocks && checkBlocks.size === 0) return piece.moves;
-
-  // // Check if pawn is pinned to king
-  // for (const tile of board) {
-  //   if (tile.piece?.type === "king" && tile.piece?.color === color) {
-  //     const pinBlocks = getPinBlocks(
-  //       board,
-  //       [tile.rank, tile.file],
-  //       [rank, file]
-  //     );
-  //     if (pinBlocks) {
-  //       // if pin is not along same file, pawn cannot move
-  //       if ([...pinBlocks][0].file !== file) return piece.moves;
-  //     }
-  //     break;
-  //   }
-  // }
 
   let startRank: 6 | 1;
   let enPassantRank: 3 | 4;
@@ -40,19 +23,19 @@ export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
 
   if (rank != rankLimit) {
     // one spot ahead
-    piece.moves.add(board[(rank + direction) * 8 + file]);
+    moves.add(board[(rank + direction) * 8 + file]);
 
     // two spots ahead
-    if (rank == startRank)
-      piece.moves.add(board[(rank + 2 * direction) * 8 + file]);
-
+    if (rank == startRank && !board[(rank + direction) * 8 + file].piece)
+      moves.add(board[(rank + 2 * direction) * 8 + file]);
+    // TODO: Add captures regardless, filter out non-captures for legal moves
     // capture on right
     if (
       file < 7 &&
       board[(rank + direction) * 8 + file + 1].piece &&
       board[(rank + direction) * 8 + file + 1].piece!.color !== color
     )
-      piece.moves.add(board[(rank + direction) * 8 + file + 1]);
+      moves.add(board[(rank + direction) * 8 + file + 1]);
 
     // capture on left
     if (
@@ -60,7 +43,7 @@ export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
       board[(rank + direction) * 8 + file - 1].piece &&
       board[(rank + direction) * 8 + file - 1].piece!.color !== color
     )
-      piece.moves.add(board[(rank + direction) * 8 + file - 1]);
+      moves.add(board[(rank + direction) * 8 + file - 1]);
 
     // en passant on right
     if (
@@ -70,7 +53,7 @@ export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
       board[rank * 8 + file + 1].piece?.color !== color &&
       board[rank * 8 + file + 1].piece?.params.get("movedTwo")
     ) {
-      piece.moves.add(board[(rank + direction) * 8 + file + 1]);
+      moves.add(board[(rank + direction) * 8 + file + 1]);
       piece.params.set("en passant", true);
     }
 
@@ -82,15 +65,12 @@ export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
       board[rank * 8 + file - 1].piece?.color !== color &&
       board[rank * 8 + file + 1].piece?.params.get("movedTwo")
     ) {
-      piece.moves.add(board[(rank + direction) * 8 + file - 1]);
+      moves.add(board[(rank + direction) * 8 + file - 1]);
       piece.params.set("en passant", true);
     }
   }
 
-  // // Restrict moves if king is in check
-  // if (checkBlocks) filterMoves(piece.moves, checkBlocks);
-
-  return piece.moves;
+  return moves;
 }
 
 export function pawnBlock(
