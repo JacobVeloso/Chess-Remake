@@ -1,39 +1,20 @@
 import "./Board.css";
 import pieces from "../assets/index";
-import Tile, { isAttacked } from "./Tile";
+import Tile from "./Tile";
 import type {
   PieceData,
   TileData,
   BoardState,
-  Move,
   type,
   color,
   dimension,
 } from "./types.ts";
-import { bishopMoves, bishopBlock } from "./PieceTypes/Bishop.ts";
-import { rookMoves, rookBlock } from "./PieceTypes/Rook.ts";
-import { knightMoves, knightBlock } from "./PieceTypes/Knight";
-import { pawnMoves, pawnBlock } from "./PieceTypes/Pawn.ts";
-import { kingMoves, kingBlock, checkBlocks } from "./PieceTypes/King.ts";
-import { queenMoves, queenBlock } from "./PieceTypes/Queen";
-import useChess, {
-  calculateLegalMoves,
-  applyMove,
-  calculateAllMoves,
-  filterBlocked,
-  checkFilter,
-  pinFilter,
-  nextGameState,
-  getHighlightedTiles,
-} from "./Chess.ts";
+import useChess, { calculateLegalMoves, getHighlightedTiles } from "./Chess.ts";
 import {
   DndContext,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
-import { useEffect } from "react";
-
-export let whiteCanMove = true;
 
 function setupInitialBoard(): BoardState {
   const tileIds = new Map<TileData["id"], TileData>();
@@ -348,7 +329,7 @@ function setupInitialBoard(): BoardState {
 
   return {
     tiles: TILES,
-    moveHistory: [],
+    //moveHistory: [],
     whitePieces: WHITE_PIECES,
     blackPieces: BLACK_PIECES,
   };
@@ -366,12 +347,6 @@ const Board = () => {
     setupInitialBoard()
   );
   let moves = calculateLegalMoves(board, turn);
-  // for (const key of moves.keys()) {
-  //   console.log(key + ": " + moves.get(key));
-  //   moves.get(key)?.forEach((move) => {
-  //     console.log("move: " + move);
-  //   });
-  // }
 
   function handleDragStart(event: DragStartEvent) {
     const pieceId = event.active.id as PieceData["id"];
@@ -380,13 +355,6 @@ const Board = () => {
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    // console.log("MOVES");
-    // for (const key of moves.keys()) {
-    //   console.log(key + ": " + moves.get(key));
-    //   moves.get(key)?.forEach((move) => {
-    //     console.log("move: " + move);
-    //   });
-    // }
     setActive(new Array(64).fill(false));
     const { active, over } = event;
 
@@ -399,10 +367,9 @@ const Board = () => {
 
     const piece = getPiece(board.tiles, pieceId);
     if (!piece) return;
-    // console.log("piece found!");
+
     // Check if tile is a legal move for the piece
     if (moves.get(pieceId)?.has(targetTileId)) {
-      // console.log("moving piece!");
       const sourceTileId = board.tiles[piece.rank * 8 + piece.file].id;
       const targetTile = board.tiles[+targetTileId];
       moves =
@@ -416,184 +383,6 @@ const Board = () => {
           moves
         ) ?? new Map();
     }
-
-    // // // Check that piece can access the tile
-    // // let canMove = false;
-    // // for (const attacker of tiles[+targetTileId].attackers) {
-    // //   if (attacker.id === pieceId) {
-    // //     canMove = true;
-    // //     piece = attacker;
-    // //     break;
-    // //   }
-    // // }
-    // // if (!canMove) return;
-
-    // // // Check that move is legal
-    // // if (!legalMoves(tiles, piece).has(targetTile)) return;
-
-    // const sourceTile = tiles[piece.rank * 8 + piece.file];
-    // if (sourceTile === targetTile) return;
-    // const color = piece.color;
-    // const targetRank = targetTile.rank;
-    // const targetFile = targetTile.file;
-    // let pieceToDelete: PieceData | null = null;
-
-    // // Check that tile is empty or can be captured
-    // if (targetTile.piece) {
-    //   // // Own piece blocking
-    //   // if (targetTile.piece.color === color) return;
-    //   pieceToDelete = targetTile.piece;
-    // }
-
-    // placePiece((prevTiles) => {
-    //   // //console.log("placing");
-    //   // // Find the piece data from the previous tiles
-    //   // let oldTile: TileData | null = null;
-    //   // let newTile: TileData | null = null;
-    //   // for (const tile of prevTiles) {
-    //   //   // Source tile
-    //   //   if (tile.piece?.id === pieceId) {
-    //   //     oldTile = tile;
-    //   //   }
-    //   //   // Target tile
-    //   //   if (tile.id === targetTileId) {
-    //   //     newTile = tile;
-    //   //   }
-    //   // }
-    //   // // tile not found?
-    //   // if (!oldTile || !newTile) return prevTiles;
-
-    //   // // Check that source & target tiles are distinct
-    //   // //if (oldTile === newTile || newTile.piece) return prevTiles;
-    //   // oldTile.piece = null;
-    //   // //console.log("placed on " + targetRank + " " + targetFile);
-    //   // // Capture piece
-    //   // if (newTile.piece) {
-    //   //   // Remove old piece and its attacks from board
-    //   //   for (const tile of prevTiles) {
-    //   //     tile.attackers.delete(newTile.piece);
-    //   //   }
-    //   // }
-    //   // newTile.piece = piece;
-    //   // console.log(
-    //   //   "piece " + pieceId + " oldTile " + oldTile.id + " newTile " + newTile.id
-    //   // );
-    //   // return prevTiles;
-
-    //   // Make a shallow copy of the tiles array
-    //   let newTiles = prevTiles.map((tile) => ({ ...tile }));
-
-    //   // Find old/new tile indices
-    //   const oldIndex = newTiles.findIndex((t) => t.piece?.id === pieceId);
-    //   const newIndex = newTiles.findIndex((t) => t.id === targetTileId);
-
-    //   // If not found, return previous state unchanged
-    //   if (oldIndex === -1 || newIndex === -1) return prevTiles;
-
-    //   const oldTile = newTiles[oldIndex];
-    //   const newTile = newTiles[newIndex];
-
-    //   // Clear the piece from the old tile
-    //   newTiles[oldIndex] = { ...oldTile, piece: null };
-
-    //   // Remove attackers referencing the newTile piece (if capturing)
-    //   let newTilePiece = newTile.piece;
-    //   if (newTilePiece) {
-    //     newTiles = newTiles.map((tile) => ({
-    //       ...tile,
-    //       attackers: new Set(
-    //         [...tile.attackers].filter((p) => p !== newTilePiece)
-    //       ),
-    //     }));
-    //   }
-
-    //   // Place the moved piece on the new tile
-    //   newTiles[newIndex] = { ...newTiles[newIndex], piece };
-
-    //   return newTiles;
-    // });
-
-    // if (pieceToDelete) {
-    //   PIECES.delete(pieceToDelete);
-    // }
-
-    // piece.rank = targetRank;
-    // piece.file = targetFile;
-    // colorInCheck = null;
-    // // let checkBlocks: Set<TileData> | null = null;
-    // // // Recalculate moves for piece
-    // // checkBlocks = recalculateMoves(tiles, piece);
-
-    // // // Check if opposing king is now in check
-    // // if (checkBlocks) colorInCheck = piece.color === "white" ? "black" : "white";
-
-    // // Extra checks for pawns
-    // if (piece.type === "pawn") {
-    //   // // Cannot move forward if any piece is blocking
-    //   // if (
-    //   //   targetTile.piece ||
-    //   //   // White pawn moving two with a piece directly in front
-    //   //   (piece.color === "white" &&
-    //   //     piece.rank === 6 &&
-    //   //     tiles[(targetRank - 1) * 8 + targetFile].piece) ||
-    //   //   // Black pawn moving two with a piece directly in front
-    //   //   (piece.color === "black" &&
-    //   //     piece.rank === 1 &&
-    //   //     tiles[(targetRank + 1) * 8 + targetFile].piece)
-    //   // )
-    //   //   return;
-
-    //   // Set and store pawn if it moved two squares (to check for en passant on next turn)
-    //   if (Math.abs(targetRank - piece.rank) === 2) {
-    //     piece.params.set("movedTwo", true);
-    //     if (piece.color === "white") whiteMovedPawn = piece;
-    //     else blackMovedPawn = piece;
-    //   }
-    // }
-
-    // // Once a king or rook moves they cannot be used to castle
-    // if (piece.type === "king" || piece.type === "rook")
-    //   piece.params.set("hasMoved", true);
-
-    // // Remove attacks from previous turn
-    // TILES.forEach((tile) => {
-    //   tile.attackers.clear();
-    // });
-
-    // // Call nextGameState
-    // nextGameState(TILES, PIECES, whiteTurn ? "white" : "black");
-
-    // // const ownPieces = color === "white" ? WHITE_PIECES : BLACK_PIECES;
-    // // const oppPieces = color === "white" ? BLACK_PIECES : WHITE_PIECES;
-
-    // // // Recalculate moves for other pieces of same color
-    // // // Calculate moves for all of own pieces
-    // // for (const other of ownPieces) {
-    // //   const blocks = recalculateMoves(tiles, other);
-    // //   if (blocks)
-    // //     checkBlocks = new Set([...(checkBlocks ?? new Set()), ...blocks]);
-    // // }
-    // // // Recalculate moves for opposing pieces
-    // // for (const opp of oppPieces) {
-    // //   removeAttacks(tiles, opp);
-    // //   const oppMoves = opp.calcMoves(opp, tiles);
-    // //   for (const move of oppMoves) {
-    // //     move.attackers.add(opp);
-    // //   }
-    // // }
-
-    // // TODO: Check that opponent still has legal moves
-
-    // // Reset a pawn that moved two squares last turn (cannot be captured via en passant anymore)
-    // if (whiteTurn && blackMovedPawn) {
-    //   blackMovedPawn.params.set("movedTwo", false);
-    // } else if (!whiteTurn && whiteMovedPawn) {
-    //   whiteMovedPawn.params.set("movedTwo", false);
-    // }
-
-    // // Switch to other color's turn
-    // nextTurn(!whiteTurn);
-    // whiteCanMove = !whiteCanMove;
   }
 
   return (
@@ -614,3 +403,83 @@ const Board = () => {
 };
 
 export default Board;
+
+/*
+You will attempt to implement a performance improvement to a large slowdown in a react app
+
+Your should split your goals into 2 parts:
+- identifying the problem
+- fixing the problem
+	- it is okay to implement a fix even if you aren't 100% sure the fix solves the performance problem. When you aren't sure, you should tell the user to try repeating the interaction, and feeding the "Formatted Data" in the React Scan notifications optimize tab. This allows you to start a debugging flow with the user, where you attempt a fix, and observe the result. The user may make a mistake when they pass you the formatted data, so must make sure, given the data passed to you, that the associated data ties to the same interaction you were trying to debug.
+
+Make sure to check if the user has the react compiler enabled (project dependent, configured through build tool), so you don't unnecessarily memoize components. If it is, you do not need to worry about memoizing user components
+
+One challenge you may face is the performance problem lies in a node_module, not in user code. If you are confident the problem originates because of a node_module, there are multiple strategies, which are context dependent:
+- you can try to work around the problem, knowing which module is slow
+- you can determine if its possible to resolve the problem in the node_module by modifying non node_module code
+- you can monkey patch the node_module to experiment and see if it's really the problem (you can modify a functions properties to hijack the call for example)
+- you can determine if it's feasible to replace whatever node_module is causing the problem with a performant option (this is an extreme)
+
+
+We have the high level time of how much react spent rendering, and what else the browser spent time on during this slowdown
+
+- react component render time: 0ms
+- other time: 314ms
+
+
+We also have lower level information about react components, such as their render time, and which props/state/context changed when they re-rendered.
+
+
+
+You may notice components have many renders, but much fewer props/state/context changes. This normally implies most of the components could of been memoized to avoid computation
+
+It's also important to remember if a component had no props/state/context change, and it was memoized, it would not render. So the flow should be:
+- find the most expensive components
+- see what's causing them to render
+- determine how you can make those state/props/context not change for a large set of the renders
+- once there are no more changes left, you can memoize the component so it no longer unnecessarily re-renders. 
+
+An important thing to note is that if you see a lot of react renders (some components with very high render counts), but other time is much higher than render time, it is possible that the components with lots of renders run hooks like useEffect/useLayoutEffect, which run outside of what we profile (just react render time).
+
+It's also good to note that react profiles hook times in development, and if many hooks are called (lets say 5,000 components all called a useEffect), it will have to profile every single one. And it may also be the case the comparison of the hooks dependency can be expensive, and that would not be tracked in render time.
+
+If a node_module is the component with high renders, you can experiment to see if that component is the root issue (because of hooks). You should use the same instructions for node_module debugging mentioned previously.
+
+If renders don't seem to be the problem, see if there are any expensive CSS properties being added/mutated, or any expensive DOM Element mutations/new elements being created that could cause this slowdown. 
+
+Your goal will be to help me find the source of a performance problem in a React App. I collected a large dataset about this specific performance problem.
+
+We have the high level time of how much react spent rendering, and what else the browser spent time on during this slowdown
+
+- react component render time: 0ms
+- other time (other JavaScript, hooks like useEffect, style recalculations, layerization, paint & commit and everything else the browser might do to draw a new frame after javascript mutates the DOM): 314ms
+
+
+We also have lower level information about react components, such as their render time, and which props/state/context changed when they re-rendered.
+
+
+
+You may notice components have many renders, but much fewer props/state/context changes. This normally implies most of the components could of been memoized to avoid computation
+
+It's also important to remember if a component had no props/state/context change, and it was memoized, it would not render. So a flow we can go through is:
+- find the most expensive components
+- see what's causing them to render
+- determine how you can make those state/props/context not change for a large set of the renders
+- once there are no more changes left, you can memoize the component so it no longer unnecessarily re-renders. 
+
+
+An important thing to note is that if you see a lot of react renders (some components with very high render counts), but other time is much higher than render time, it is possible that the components with lots of renders run hooks like useEffect/useLayoutEffect, which run outside of what we profile (just react render time).
+
+It's also good to note that react profiles hook times in development, and if many hooks are called (lets say 5,000 components all called a useEffect), it will have to profile every single one, and this can add significant overhead when thousands of effects ran.
+
+If it's not possible to explain the root problem from this data, please ask me for more data explicitly, and what we would need to know to find the source of the performance problem.
+
+I will provide you with a set of high level, and low level performance data about a large frame drop in a React App:
+### High level
+- react component render time: 0ms
+- how long it took to run everything else (other JavaScript, hooks like useEffect, style recalculations, layerization, paint & commit and everything else the browser might do to draw a new frame after javascript mutates the DOM): 314ms
+
+### Low level
+We also have lower level information about react components, such as their render time, and which props/state/context changed when they re-rendered.
+
+*/

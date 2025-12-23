@@ -1,9 +1,9 @@
 import { pawnMoves, pawnBlock, pawnUnblock } from "./PieceTypes/Pawn";
-import { knightMoves, knightBlock } from "./PieceTypes/Knight";
+import { knightMoves } from "./PieceTypes/Knight";
 import { rookMoves, rookBlock, rookUnblock } from "./PieceTypes/Rook";
 import { bishopMoves, bishopBlock, bishopUnblock } from "./PieceTypes/Bishop";
 import { queenMoves, queenBlock, queenUnblock } from "./PieceTypes/Queen";
-import { kingMoves, kingBlock } from "./PieceTypes/King";
+import { kingMoves } from "./PieceTypes/King";
 import type { PieceData, TileData, dimension } from "./types";
 
 export function calculateMoves(

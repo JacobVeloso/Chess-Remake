@@ -17,7 +17,8 @@
     "react-dnd": "^16.0.1",
     "react-dnd-html5-backend": "^16.0.1",
     "react-dom": "^19.1.1",
-    "react-draggable": "^4.5.0"
+    "react-draggable": "^4.5.0",
+    "react-scan": "^0.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.35.0",
@@ -30,6 +31,7 @@
     "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.0.2",
+    "babel-plugin-react-compiler": "^1.0.0",
     "baseline-browser-mapping": "^2.9.6",
     "eslint": "^9.35.0",
     "eslint-plugin-react-hooks": "^5.2.0",

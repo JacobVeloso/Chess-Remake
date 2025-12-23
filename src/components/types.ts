@@ -20,7 +20,7 @@ export type TileData = {
 
 export type BoardState = {
   tiles: TileData[];
-  moveHistory: Move[];
+  //moveHistory: Move[];
   whitePieces: Set<PieceData>;
   blackPieces: Set<PieceData>;
 };

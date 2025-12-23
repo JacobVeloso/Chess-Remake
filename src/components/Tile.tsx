@@ -2,6 +2,7 @@ import "./Tile.css";
 import Piece from "./Piece";
 import { useDroppable } from "@dnd-kit/core";
 import type { TileData, color } from "./types";
+import { memo } from "react";
 
 export function isAttacked(tile: TileData, pieceColor: color): boolean {
   for (const attacker of tile.attackers) {
@@ -17,7 +18,7 @@ interface Props {
   active: boolean;
 }
 
-const Tile = ({ tileData, active }: Props) => {
+const Tile = memo(({ tileData, active }: Props) => {
   const { setNodeRef } = useDroppable({
     id: tileData.id,
   });
@@ -40,7 +41,7 @@ const Tile = ({ tileData, active }: Props) => {
       ) : null}
     </div>
   );
-};
+});
 
 export default Tile;
 

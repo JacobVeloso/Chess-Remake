@@ -1,7 +1,7 @@
 import "./Piece.css";
 import type { color, type } from "./types";
 import { useDraggable } from "@dnd-kit/core";
-import { whiteCanMove } from "./Board";
+import { memo } from "react";
 
 interface Props {
   id: string;
@@ -10,7 +10,7 @@ interface Props {
   src: string;
 }
 
-const Piece = ({ id, color, type, src }: Props) => {
+const Piece = memo(({ id, color, type, src }: Props) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
     id: id,
     //disabled: color === "white" ? !whiteCanMove : whiteCanMove,
@@ -33,6 +33,6 @@ const Piece = ({ id, color, type, src }: Props) => {
       src={src}
     />
   );
-};
+});
 
 export default Piece;

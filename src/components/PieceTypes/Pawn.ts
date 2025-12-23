@@ -21,53 +21,57 @@ export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
     rankLimit = 7;
   }
 
-  if (rank != rankLimit) {
+  if (rank !== rankLimit) {
     // one spot ahead
     moves.add(board[(rank + direction) * 8 + file]);
 
     // two spots ahead
     if (rank == startRank && !board[(rank + direction) * 8 + file].piece)
       moves.add(board[(rank + 2 * direction) * 8 + file]);
-    // TODO: Add captures regardless, filter out non-captures for legal moves
-    // capture on right
-    if (
-      file < 7 &&
-      board[(rank + direction) * 8 + file + 1].piece &&
-      board[(rank + direction) * 8 + file + 1].piece!.color !== color
-    )
-      moves.add(board[(rank + direction) * 8 + file + 1]);
 
-    // capture on left
-    if (
-      file > 0 &&
-      board[(rank + direction) * 8 + file - 1].piece &&
-      board[(rank + direction) * 8 + file - 1].piece!.color !== color
-    )
-      moves.add(board[(rank + direction) * 8 + file - 1]);
+    // left & right captures
+    if (file > 0) moves.add(board[(rank + direction) * 8 + file - 1]);
+    if (file < 7) moves.add(board[(rank + direction) * 8 + file + 1]);
 
-    // en passant on right
-    if (
-      rank == enPassantRank &&
-      file < 7 &&
-      board[rank * 8 + file + 1].piece?.type === "pawn" &&
-      board[rank * 8 + file + 1].piece?.color !== color &&
-      board[rank * 8 + file + 1].piece?.params.get("movedTwo")
-    ) {
-      moves.add(board[(rank + direction) * 8 + file + 1]);
-      piece.params.set("en passant", true);
-    }
+    // // capture on right
+    // if (
+    //   file < 7 &&
+    //   board[(rank + direction) * 8 + file + 1].piece &&
+    //   board[(rank + direction) * 8 + file + 1].piece!.color !== color
+    // )
+    //   moves.add(board[(rank + direction) * 8 + file + 1]);
 
-    // en passant on left
-    if (
-      rank == enPassantRank &&
-      file > 0 &&
-      board[rank * 8 + file - 1].piece?.type === "pawn" &&
-      board[rank * 8 + file - 1].piece?.color !== color &&
-      board[rank * 8 + file + 1].piece?.params.get("movedTwo")
-    ) {
-      moves.add(board[(rank + direction) * 8 + file - 1]);
-      piece.params.set("en passant", true);
-    }
+    // // capture on left
+    // if (
+    //   file > 0 &&
+    //   board[(rank + direction) * 8 + file - 1].piece &&
+    //   board[(rank + direction) * 8 + file - 1].piece!.color !== color
+    // )
+    //   moves.add(board[(rank + direction) * 8 + file - 1]);
+
+    // // en passant on right
+    // if (
+    //   rank == enPassantRank &&
+    //   file < 7 &&
+    //   board[rank * 8 + file + 1].piece?.type === "pawn" &&
+    //   board[rank * 8 + file + 1].piece?.color !== color &&
+    //   board[rank * 8 + file + 1].piece?.params.get("movedTwo")
+    // ) {
+    //   moves.add(board[(rank + direction) * 8 + file + 1]);
+    //   piece.params.set("en passant", true);
+    // }
+
+    // // en passant on left
+    // if (
+    //   rank == enPassantRank &&
+    //   file > 0 &&
+    //   board[rank * 8 + file - 1].piece?.type === "pawn" &&
+    //   board[rank * 8 + file - 1].piece?.color !== color &&
+    //   board[rank * 8 + file + 1].piece?.params.get("movedTwo")
+    // ) {
+    //   moves.add(board[(rank + direction) * 8 + file - 1]);
+    //   piece.params.set("en passant", true);
+    // }
   }
 
   return moves;
@@ -122,4 +126,46 @@ export function pawnUnblock(
     unblockedMoves.add(board[(unblockedRank + direction) * 8 + unblockedFile]);
 
   return unblockedMoves;
+}
+
+export function checkPawnCaptures(
+  moves: Set<TileData>,
+  board: TileData[],
+  pawn: PieceData
+): Set<TileData> {
+  if (pawn.type !== "pawn") return new Set([...moves]);
+
+  const filteredMoves = new Set<TileData>();
+
+  // Add forward move(s)
+  moves.forEach((move) => {
+    if (board[+move.id].file === pawn.file) filteredMoves.add(board[+move.id]);
+  });
+
+  const [rank, file] = [pawn.rank, pawn.file];
+  const color = pawn.color === "white" ? "black" : "white";
+  const direction = pawn.color === "white" ? -1 : 1;
+  const leftTile = file === 0 ? null : board[(rank + direction) * 8 + file - 1];
+  const leftPassant = file === 0 ? null : board[rank * 8 + file - 1];
+  const rightTile =
+    file === 7 ? null : board[(rank + direction) * 8 + file + 1];
+  const rightPassant = file === 7 ? null : board[rank * 8 + file + 1];
+
+  // check left capture
+  if (
+    leftTile?.piece?.color === color ||
+    // check left en passant
+    leftPassant?.piece?.params.get("movedTwo")
+  )
+    filteredMoves.add(leftTile!);
+
+  // check right capture
+  if (
+    rightTile?.piece?.color === color ||
+    // check right en passant
+    rightPassant?.piece?.params.get("movedTwo")
+  )
+    filteredMoves.add(rightTile!);
+
+  return filteredMoves;
 }

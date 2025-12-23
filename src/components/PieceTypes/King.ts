@@ -15,42 +15,13 @@ export function kingMoves(piece: PieceData, board: TileData[]): Set<TileData> {
     }
   }
 
-  // Add castling moves where applicable
-  const castles = castlingMoves(board, piece);
-  castles.forEach((move) => moves.add(move));
-  return moves;
-}
-
-export function kingBlock(
-  piece: PieceData,
-  board: TileData[],
-  blockedPos: [dimension, dimension]
-): Set<TileData> {
-  // const [blockedRank, blockedFile] = blockedPos;
-  // void board;
-
-  // const blockedMoves = new Set<TileData>();
-  // // Remove move now blocked
-  // for (const move of piece.moves) {
-  //   if (move.rank === blockedRank && move.file === blockedFile) {
-  //     piece.moves.delete(move);
-  //     blockedMoves.add(move);
-  //     break;
-  //   }
-  // }
-
-  // return piece.moves;
-
-  const attacker = board[blockedPos[0] * 8 + blockedPos[1]].piece!;
-  if (attacker.color === piece.color) {
-    for (const move of piece.moves) {
-      if (move.rank === blockedPos[0] && move.file === blockedPos[1]) {
-        piece.moves.delete(move);
-        return new Set<TileData>([move]);
-      }
-    }
+  // Add castling moves
+  if (piece.type === "king" && !piece.params.get("hasMoved")) {
+    moves.add(board[rank * 8 + file - 2]);
+    moves.add(board[rank * 8 + file + 2]);
   }
-  return new Set();
+
+  return moves;
 }
 
 export function checkBlocks(
@@ -85,46 +56,68 @@ export function checkBlocks(
   ]);
 }
 
-function castlingMoves(board: TileData[], king: PieceData): Set<TileData> {
-  const rank = king.color === "white" ? 7 : 0;
-  const castleMoves = new Set<TileData>();
-  if (
-    king.type !== "king" ||
-    king.params.get("hasMoved") ||
-    checkBlocks(board, rank, 4)
-  )
-    return castleMoves;
+export function checkCastlingMoves(
+  moves: Set<TileData>,
+  board: TileData[],
+  king: PieceData
+): Set<TileData> {
+  const filteredMoves = new Set<TileData>([...moves]);
 
-  const right = board[rank * 8 + 7].piece;
+  if (king.type !== "king") return filteredMoves;
+
+  const [rank, file] = [king.rank, king.file];
+
   const left = board[rank * 8].piece;
+  const right = board[rank * 8 + 7].piece;
 
-  // check right rook
-  if (
-    right && // check if tile has a piece
-    right.type === "rook" && // check if the piece is a rook
-    !right.params.get("hasMoved") && // check if rook has moved
-    !board[rank * 8 + 5].piece && // check if all tiles between are empty
-    !isAttacked(board[rank * 8 + 5], king.color) && // check if any tiles are attacked
-    !board[rank * 8 + 6].piece &&
-    !isAttacked(board[rank * 8 + 6], king.color)
-  ) {
-    castleMoves.add(board[rank * 8 + 6]);
+  filteredMoves.forEach((move) => {
+    if (Math.abs(move.file - file) === 2) {
+      // Check left castle
+      if (
+        move.file < file &&
+        (!left ||
+          left.params.get("hasMoved") ||
+          board[rank * 8 + 3].piece ||
+          isAttacked(board[rank * 8 + 3], king.color) ||
+          board[rank * 8 + 2].piece ||
+          isAttacked(board[rank * 8 + 2], king.color) ||
+          board[rank * 8 + 1].piece ||
+          isAttacked(board[rank * 8 + 1], king.color))
+      )
+        filteredMoves.delete(move);
+      // Check right castle
+      else if (
+        move.file > file &&
+        (!right ||
+          right.params.get("hasMoved") ||
+          board[rank * 8 + 5].piece ||
+          isAttacked(board[rank * 8 + 5], king.color) ||
+          board[rank * 8 + 6].piece ||
+          isAttacked(board[rank * 8 + 6], king.color))
+      )
+        filteredMoves.delete(move);
+    }
+  });
+  return filteredMoves;
+}
+
+export function removeCastlingMove(
+  board: TileData[],
+  king: PieceData,
+  direction: "left" | "right"
+): void {
+  if (king.type !== "king") return;
+
+  for (const move of king.moves) {
+    if (Math.abs(move.file - king.file) === 2) {
+      if (direction === "left" && move.file < king.file) {
+        king.moves.delete(move);
+        board[king.rank * 8 + king.file - 2].attackers.delete(king);
+      } else if (direction === "right" && move.file > king.file) {
+        king.moves.delete(move);
+        board[king.rank * 8 + king.file + 2].attackers.delete(king);
+      }
+      return;
+    }
   }
-
-  // check left rook
-  if (
-    left &&
-    left.type === "rook" &&
-    !left.params.get("hasMoved") &&
-    !board[rank * 8 + 3].piece &&
-    !isAttacked(board[rank * 8 + 3], king.color) &&
-    !board[rank * 8 + 2].piece &&
-    !isAttacked(board[rank * 8 + 2], king.color) &&
-    !board[rank * 8 + 1].piece &&
-    !isAttacked(board[rank * 8 + 1], king.color)
-  ) {
-    castleMoves.add(board[rank * 8 + 2]);
-  }
-
-  return castleMoves;
 }
