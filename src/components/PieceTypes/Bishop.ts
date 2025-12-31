@@ -1,89 +1,135 @@
 import type { dimension, PieceData, TileData } from "../types.ts";
 
-function addMoves(
-  board: TileData[],
-  moves: Set<TileData>,
-  [i, j]: [dimension, dimension],
-  [iDir, jDir]: [1 | -1, 1 | -1]
-): void {
-  while (
-    i >= 0 &&
-    i < 8 &&
-    j >= 0 &&
-    j < 8 &&
-    !board[(i - 1) * 8 + (j - 1)].piece
-  ) {
-    const index = i * 8 + j;
-    moves.add(board[index]);
-    i += iDir;
-    j += jDir;
-  }
-}
-
 export function bishopMoves(
   piece: PieceData,
-  board: TileData[]
+  board: TileData[],
+  prevPos: [dimension, dimension]
 ): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
   const moves = new Set<TileData>();
 
-  // Upper right diagonal
-  if (rank > 0 && file < 7)
-    addMoves(
-      board,
-      moves,
-      [(rank - 1) as dimension, (file + 1) as dimension],
-      [-1, 1]
-    );
+  // Determine which axis bishop moved along
+  const [prevRank, prevFile] = prevPos;
+  if (
+    (prevRank > piece.rank && prevFile < piece.file) ||
+    (prevRank < piece.rank && prevFile > piece.file)
+  ) {
+    piece.moves.get("NW")?.forEach((move) => {
+      move.attackers.delete(piece);
+    });
+    piece.moves.get("NW")?.clear();
+    piece.moves.get("SE")?.forEach((move) => {
+      move.attackers.delete(piece);
+    });
+    piece.moves.get("SE")?.clear();
 
-  // Lower right diagonal
-  if (rank < 7 && file < 7)
-    addMoves(
-      board,
-      moves,
-      [(rank + 1) as dimension, (file + 1) as dimension],
-      [1, 1]
-    );
+    // Upper left diagonal
+    if (rank > 0 && file > 0) {
+      let i = rank - 1;
+      let j = file - 1;
+      do {
+        piece.moves.get("NW")?.add(board[i * 8 + j]);
+        moves.add(board[i * 8 + j]);
+        i -= 1;
+        j -= 1;
+      } while (i >= 0 && j >= 0 && !board[(i + 1) * 8 + (j + 1)].piece);
+    }
 
-  // Lower left diagonal
-  if (rank < 7 && file > 0)
-    addMoves(
-      board,
-      moves,
-      [(rank + 1) as dimension, (file - 1) as dimension],
-      [1, -1]
-    );
+    // Lower right diagonal
+    if (rank < 7 && file < 7) {
+      let i = rank + 1;
+      let j = file + 1;
+      do {
+        piece.moves.get("SE")?.add(board[i * 8 + j]);
+        moves.add(board[i * 8 + j]);
+        i += 1;
+        j += 1;
+      } while (i < 8 && j < 8 && !board[(i - 1) * 8 + (j - 1)].piece);
+    }
 
-  // Upper left diagonal
-  if (rank > 0 && file > 0)
-    addMoves(
-      board,
-      moves,
-      [(rank - 1) as dimension, (file - 1) as dimension],
-      [-1, -1]
-    );
+    // Add previous position
+    moves.add(board[prevRank * 8 + prevFile]);
+  }
 
+  if (
+    (prevRank > piece.rank && prevFile > piece.file) ||
+    (prevRank < piece.rank && prevFile < piece.file)
+  ) {
+    piece.moves.get("NE")?.forEach((move) => {
+      move.attackers.delete(piece);
+    });
+    piece.moves.get("NE")?.clear();
+    piece.moves.get("SW")?.forEach((move) => {
+      move.attackers.delete(piece);
+    });
+    piece.moves.get("SW")?.clear();
+
+    // Upper right diagonal
+    if (rank > 0 && file < 7) {
+      let i = rank - 1;
+      let j = file + 1;
+      do {
+        piece.moves.get("NE")?.add(board[i * 8 + j]);
+        moves.add(board[i * 8 + j]);
+        i -= 1;
+        j += 1;
+      } while (i >= 0 && j < 8 && !board[(i + 1) * 8 + (j - 1)].piece);
+    }
+
+    // Lower left diagonal
+    if (rank < 7 && file > 0) {
+      let i = rank + 1;
+      let j = file - 1;
+      do {
+        piece.moves.get("SW")?.add(board[i * 8 + j]);
+        moves.add(board[i * 8 + j]);
+        i += 1;
+        j -= 1;
+      } while (i < 8 && j >= 0 && !board[(i - 1) * 8 + (j + 1)].piece);
+    }
+
+    // Add previous position
+    moves.add(board[prevRank * 8 + prevFile]);
+  }
   return moves;
 }
 
 export function bishopBlock(
   piece: PieceData,
-  board: TileData[],
   blockedPos: [dimension, dimension]
 ): Set<TileData> {
-  void board;
   const [blockedRank, blockedFile] = blockedPos;
-  const rankDirection = blockedRank > piece.rank ? 1 : -1;
-  const fileDirection = blockedFile > piece.file ? 1 : -1;
+  let rankDirection: -1 | 1;
+  let fileDirection: -1 | 1;
+  let moves: Set<TileData>;
+  if (piece.rank > blockedRank && piece.file > blockedFile) {
+    rankDirection = -1;
+    fileDirection = -1;
+    moves = piece.moves.get("NW") ?? new Set<TileData>();
+  } else if (piece.rank > blockedRank && piece.file < blockedFile) {
+    rankDirection = -1;
+    fileDirection = 1;
+    moves = piece.moves.get("NE") ?? new Set<TileData>();
+  } else if (piece.rank < blockedRank && piece.file < blockedFile) {
+    rankDirection = 1;
+    fileDirection = 1;
+    moves = piece.moves.get("SE") ?? new Set<TileData>();
+  } else {
+    rankDirection = 1;
+    fileDirection = -1;
+    moves = piece.moves.get("SW") ?? new Set<TileData>();
+  }
 
   const blockedMoves = new Set<TileData>();
   // Remove moves now blocked
-  for (const move of piece.moves) {
+  for (const move of moves) {
     if (
       move.rank * rankDirection > blockedRank * rankDirection &&
       move.file * fileDirection > blockedFile * fileDirection
-    )
+    ) {
+      moves.delete(move);
       blockedMoves.add(move);
+    }
   }
   return blockedMoves;
 }
@@ -93,26 +139,44 @@ export function bishopUnblock(
   board: TileData[],
   unblockedPos: [dimension, dimension]
 ): Set<TileData> {
-  const [ownRank, ownFile] = [piece.rank, piece.file];
   const [unblockedRank, unblockedFile] = unblockedPos;
-  const rankDirection = unblockedRank > ownRank ? 1 : -1;
-  const fileDirection = unblockedFile > ownFile ? 1 : -1;
+  let rankDirection: -1 | 1;
+  let fileDirection: -1 | 1;
+  let moves: Set<TileData>;
+  if (piece.rank > unblockedRank && piece.file > unblockedFile) {
+    rankDirection = -1;
+    fileDirection = -1;
+    moves = piece.moves.get("NW") ?? new Set<TileData>();
+  } else if (piece.rank > unblockedRank && piece.file < unblockedFile) {
+    rankDirection = -1;
+    fileDirection = 1;
+    moves = piece.moves.get("NE") ?? new Set<TileData>();
+  } else if (piece.rank < unblockedRank && piece.file < unblockedFile) {
+    rankDirection = 1;
+    fileDirection = 1;
+    moves = piece.moves.get("SE") ?? new Set<TileData>();
+  } else {
+    rankDirection = 1;
+    fileDirection = -1;
+    moves = piece.moves.get("SW") ?? new Set<TileData>();
+  }
 
   const unblockedMoves = new Set<TileData>();
 
   // Insert moves now possible
   let i = unblockedRank + rankDirection;
   let j = unblockedFile + fileDirection;
-  while (
+  do {
+    moves.add(board[i * 8 + j]);
+    unblockedMoves.add(board[i * 8 + j]);
+    i += rankDirection;
+    j += fileDirection;
+  } while (
     i >= 0 &&
     i < 8 &&
     j >= 0 &&
     j < 8 &&
     !board[(i - rankDirection) * 8 + (j - fileDirection)].piece
-  ) {
-    unblockedMoves.add(board[i * 8 + j]);
-    i += rankDirection;
-    j += fileDirection;
-  }
+  );
   return unblockedMoves;
 }

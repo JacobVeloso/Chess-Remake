@@ -8,13 +8,9 @@ import type { PieceData, TileData, dimension } from "./types";
 
 export function calculateMoves(
   piece: PieceData,
-  board: TileData[]
+  board: TileData[],
+  prevPos: [dimension, dimension]
 ): Set<TileData> {
-  // Clear all current moves and calculate piece moves from scratch
-  piece.moves.forEach((move) => {
-    move.attackers.delete(piece);
-  });
-  piece.moves.clear();
   let moves: Set<TileData>;
   switch (piece.type) {
     case "pawn":
@@ -24,13 +20,13 @@ export function calculateMoves(
       moves = knightMoves(piece, board);
       break;
     case "rook":
-      moves = rookMoves(piece, board);
+      moves = rookMoves(piece, board, prevPos);
       break;
     case "bishop":
-      moves = bishopMoves(piece, board);
+      moves = bishopMoves(piece, board, prevPos);
       break;
     case "queen":
-      moves = queenMoves(piece, board);
+      moves = queenMoves(piece, board, prevPos);
       break;
     case "king":
       moves = kingMoves(piece, board);
@@ -38,9 +34,8 @@ export function calculateMoves(
     default:
       throw new Error("unrecognised type");
   }
-  // Add moves to piece and board
+  // Add moves to board
   moves.forEach((move) => {
-    piece.moves.add(move);
     board[move.rank * 8 + move.file].attackers.add(piece);
   });
   return moves;
@@ -54,31 +49,30 @@ export function blockMoves(
   let blockedMoves: Set<TileData>;
   switch (piece.type) {
     case "pawn":
-      blockedMoves = pawnBlock(piece, board, blockedPos);
+      blockedMoves = pawnBlock(piece, blockedPos);
       break;
     case "knight":
-      blockedMoves = new Set();
+      blockedMoves = new Set<TileData>();
       break;
     case "rook":
-      blockedMoves = rookBlock(piece, board, blockedPos);
+      blockedMoves = rookBlock(piece, blockedPos);
       break;
     case "bishop":
-      blockedMoves = bishopBlock(piece, board, blockedPos);
+      blockedMoves = bishopBlock(piece, blockedPos);
       break;
     case "queen":
-      blockedMoves = queenBlock(piece, board, blockedPos);
+      blockedMoves = queenBlock(piece, blockedPos);
       break;
     case "king":
-      blockedMoves = new Set();
+      blockedMoves = new Set<TileData>();
       break;
     default:
       throw new Error("unrecognised type");
   }
   // Remove blocked moves from piece and board
-  blockedMoves.forEach((move) => {
-    piece.moves.delete(move);
-    board[move.rank * 8 + move.file].attackers.delete(piece);
-  });
+  blockedMoves.forEach((move) =>
+    board[move.rank * 8 + move.file].attackers.delete(piece)
+  );
   return blockedMoves;
 }
 
@@ -93,7 +87,7 @@ export function unblockMoves(
       unblockedMoves = pawnUnblock(piece, board, blockedPos);
       break;
     case "knight":
-      unblockedMoves = structuredClone(piece.moves);
+      unblockedMoves = new Set<TileData>();
       break;
     case "rook":
       unblockedMoves = rookUnblock(piece, board, blockedPos);
@@ -102,17 +96,16 @@ export function unblockMoves(
       unblockedMoves = bishopUnblock(piece, board, blockedPos);
       break;
     case "queen":
-      unblockedMoves = queenUnblock(piece, board, blockedPos);
+      unblockedMoves = queenUnblock(piece, blockedPos);
       break;
     case "king":
-      unblockedMoves = structuredClone(piece.moves);
+      unblockedMoves = new Set<TileData>();
       break;
     default:
       throw new Error("unrecognised type");
   }
   // Add blocked moves to piece and board
   unblockedMoves.forEach((move) => {
-    piece.moves.add(move);
     board[move.rank * 8 + move.file].attackers.add(piece);
   });
   return unblockedMoves;

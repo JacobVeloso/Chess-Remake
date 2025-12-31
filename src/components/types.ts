@@ -2,11 +2,17 @@ export type PieceData = {
   id: string;
   color: color;
   type: type;
-  src: string;
   rank: dimension;
   file: dimension;
-  moves: Set<TileData>;
+  moves: Map<string, Set<TileData>>;
   params: Map<string, boolean>;
+};
+
+export type PieceState = {
+  id: PieceData["id"];
+  color: color;
+  type: type;
+  src: string;
 };
 
 export type TileData = {
@@ -18,9 +24,16 @@ export type TileData = {
   attackers: Set<PieceData>;
 };
 
-export type BoardState = {
+export type TileState = {
+  id: TileData["id"];
+  color: color;
+  rank: dimension;
+  file: dimension;
+  piece: PieceState | null;
+};
+
+export type BoardData = {
   tiles: TileData[];
-  //moveHistory: Move[];
   whitePieces: Set<PieceData>;
   blackPieces: Set<PieceData>;
 };

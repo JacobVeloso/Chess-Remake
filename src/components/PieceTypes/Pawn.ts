@@ -1,77 +1,66 @@
 import type { dimension, PieceData, TileData } from "../types.ts";
 
 export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
+  piece.moves.get("forward")?.forEach((move) => {
+    move.attackers.delete(piece);
+  });
+  piece.moves.get("forward")?.clear();
+  piece.moves.get("two square")?.forEach((move) => {
+    move.attackers.delete(piece);
+  });
+  piece.moves.get("two square")?.clear();
+  piece.moves.get("left capture")?.forEach((move) => {
+    move.attackers.delete(piece);
+  });
+  piece.moves.get("left capture")?.clear();
+  piece.moves.get("right capture")?.forEach((move) => {
+    move.attackers.delete(piece);
+  });
+  piece.moves.get("right capture")?.clear();
+
   const moves = new Set<TileData>();
   const [rank, file] = [piece.rank, piece.file];
   const color = piece.color;
 
   let startRank: 6 | 1;
-  let enPassantRank: 3 | 4;
   let direction: -1 | 1;
   let rankLimit: 0 | 7;
   if (color === "white") {
     startRank = 6;
-    enPassantRank = 3;
     direction = -1;
     rankLimit = 0;
   } else {
     startRank = 1;
-    enPassantRank = 4;
     direction = 1;
     rankLimit = 7;
   }
 
   if (rank !== rankLimit) {
     // one spot ahead
+    piece.moves.get("forward")?.add(board[(rank + direction) * 8 + file]);
     moves.add(board[(rank + direction) * 8 + file]);
 
     // two spots ahead
-    if (rank == startRank && !board[(rank + direction) * 8 + file].piece)
+    if (rank == startRank && !board[(rank + direction) * 8 + file].piece) {
+      piece.moves
+        .get("two square")
+        ?.add(board[(rank + 2 * direction) * 8 + file]);
       moves.add(board[(rank + 2 * direction) * 8 + file]);
+    }
 
     // left & right captures
-    if (file > 0) moves.add(board[(rank + direction) * 8 + file - 1]);
-    if (file < 7) moves.add(board[(rank + direction) * 8 + file + 1]);
-
-    // // capture on right
-    // if (
-    //   file < 7 &&
-    //   board[(rank + direction) * 8 + file + 1].piece &&
-    //   board[(rank + direction) * 8 + file + 1].piece!.color !== color
-    // )
-    //   moves.add(board[(rank + direction) * 8 + file + 1]);
-
-    // // capture on left
-    // if (
-    //   file > 0 &&
-    //   board[(rank + direction) * 8 + file - 1].piece &&
-    //   board[(rank + direction) * 8 + file - 1].piece!.color !== color
-    // )
-    //   moves.add(board[(rank + direction) * 8 + file - 1]);
-
-    // // en passant on right
-    // if (
-    //   rank == enPassantRank &&
-    //   file < 7 &&
-    //   board[rank * 8 + file + 1].piece?.type === "pawn" &&
-    //   board[rank * 8 + file + 1].piece?.color !== color &&
-    //   board[rank * 8 + file + 1].piece?.params.get("movedTwo")
-    // ) {
-    //   moves.add(board[(rank + direction) * 8 + file + 1]);
-    //   piece.params.set("en passant", true);
-    // }
-
-    // // en passant on left
-    // if (
-    //   rank == enPassantRank &&
-    //   file > 0 &&
-    //   board[rank * 8 + file - 1].piece?.type === "pawn" &&
-    //   board[rank * 8 + file - 1].piece?.color !== color &&
-    //   board[rank * 8 + file + 1].piece?.params.get("movedTwo")
-    // ) {
-    //   moves.add(board[(rank + direction) * 8 + file - 1]);
-    //   piece.params.set("en passant", true);
-    // }
+    if (file > 0) {
+      piece.moves
+        .get("left capture")
+        ?.add(board[(rank + direction) * 8 + file - 1]);
+      moves.add(board[(rank + direction) * 8 + file - 1]);
+    }
+    if (file < 7) {
+      piece.moves
+        .get("right capture")
+        ?.add(board[(rank + direction) * 8 + file + 1]);
+      moves.add(board[(rank + direction) * 8 + file + 1]);
+    }
   }
 
   return moves;
@@ -79,26 +68,22 @@ export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
 
 export function pawnBlock(
   piece: PieceData,
-  board: TileData[],
   blockedPos: [dimension, dimension]
 ): Set<TileData> {
-  void board;
-  const [blockedRank, blockedFile] = blockedPos;
   const canMoveTwo =
     (piece.color === "white" && piece.rank === 6) ||
     (piece.color === "black" && piece.rank === 1);
 
-  const blockedMoves = new Set<TileData>();
+  let blockedMoves = new Set<TileData>();
 
-  // Remove moves now blocked
-  for (const move of piece.moves) {
-    // Remove two square move if applicable
-    if (
-      canMoveTwo && // check if pawn can move two
-      move.file === blockedFile && // check that move is forward
-      Math.abs(piece.rank - blockedRank) === 1
-    )
-      blockedMoves.add(move);
+  // Remove two square move if applicable
+  if (
+    canMoveTwo && // check if pawn can move two
+    piece.file === blockedPos[1] && // check that tile is in front of pawn
+    Math.abs(piece.rank - blockedPos[0]) === 1 // check that tile in front of pawn is blocked
+  ) {
+    blockedMoves = new Set<TileData>(piece.moves.get("two square")!);
+    piece.moves.get("two square")?.clear();
   }
 
   return blockedMoves;
@@ -122,50 +107,92 @@ export function pawnUnblock(
     canMoveTwo &&
     piece.file === unblockedFile &&
     Math.abs(piece.rank - unblockedRank) === 1
-  )
+  ) {
+    piece.moves
+      .get("two square")
+      ?.add(board[(unblockedRank + direction) * 8 + unblockedFile]);
     unblockedMoves.add(board[(unblockedRank + direction) * 8 + unblockedFile]);
+  }
 
   return unblockedMoves;
 }
 
-export function checkPawnCaptures(
-  moves: Set<TileData>,
+export function checkPawnMoves(
   board: TileData[],
   pawn: PieceData
 ): Set<TileData> {
-  if (pawn.type !== "pawn") return new Set([...moves]);
+  if (pawn.type !== "pawn") return new Set<TileData>();
 
-  const filteredMoves = new Set<TileData>();
-
-  // Add forward move(s)
-  moves.forEach((move) => {
-    if (board[+move.id].file === pawn.file) filteredMoves.add(board[+move.id]);
-  });
+  const deletions = new Set<TileData>();
 
   const [rank, file] = [pawn.rank, pawn.file];
-  const color = pawn.color === "white" ? "black" : "white";
-  const direction = pawn.color === "white" ? -1 : 1;
-  const leftTile = file === 0 ? null : board[(rank + direction) * 8 + file - 1];
-  const leftPassant = file === 0 ? null : board[rank * 8 + file - 1];
-  const rightTile =
-    file === 7 ? null : board[(rank + direction) * 8 + file + 1];
-  const rightPassant = file === 7 ? null : board[rank * 8 + file + 1];
 
-  // check left capture
-  if (
-    leftTile?.piece?.color === color ||
-    // check left en passant
-    leftPassant?.piece?.params.get("movedTwo")
-  )
-    filteredMoves.add(leftTile!);
+  // Check forward move
+  const forward = pawn.moves.get("forward")!.values().next().value!;
+  if (forward.piece) deletions.add(forward);
 
-  // check right capture
-  if (
-    rightTile?.piece?.color === color ||
-    // check right en passant
-    rightPassant?.piece?.params.get("movedTwo")
-  )
-    filteredMoves.add(rightTile!);
+  // Check two square move
+  //console.log(pawn.rank + " " + pawn.file);
+  if (pawn.moves.get("two square")!.size > 0) {
+    //console.log("> 0");
+    const twoSquare = pawn.moves.get("two square")!.values().next().value!;
+    if (twoSquare.piece) deletions.add(twoSquare);
+  }
 
-  return filteredMoves;
+  // Check left move
+  if (pawn.file !== 0 && pawn.moves.get("left capture")!.size > 0) {
+    const left = pawn.moves.get("left capture")!.values().next().value!;
+    if (
+      // Regular capture
+      (!left.piece || left.piece!.color === pawn.color) &&
+      // en passant
+      (!board[rank * 8 + file - 1].piece ||
+        (board[rank * 8 + file - 1].piece &&
+          !board[rank * 8 + file - 1].piece!.params.get("movedTwo")))
+    )
+      deletions.add(left);
+  }
+
+  // Check right move
+  if (pawn.file !== 7 && pawn.moves.get("right capture")!.size > 0) {
+    const right = pawn.moves.get("right capture")!.values().next().value!;
+    if (
+      // Regular capture
+      (!right.piece || right.piece!.color === pawn.color) &&
+      // en passant
+      (!board[rank * 8 + file + 1].piece ||
+        (board[rank * 8 + file + 1].piece &&
+          !board[rank * 8 + file + 1].piece!.params.get("movedTwo")))
+    )
+      deletions.add(right);
+  }
+
+  // moves.forEach((move) => {
+  //   // Check forward moves
+  //   if (move.file === file && move.piece) moves.delete(move);
+  //   // check left move
+  //   else if (
+  //     move.file === file - 1 &&
+  //     // Regular capture
+  //     (!move.piece || move.piece!.color === pawn.color) &&
+  //     // en passant
+  //     (!board[rank * 8 + file - 1].piece ||
+  //       (board[rank * 8 + file - 1].piece &&
+  //         !board[rank * 8 + file - 1].piece!.params.get("movedTwo")))
+  //   )
+  //     moves.delete(move);
+  //   // check right move
+  //   else if (
+  //     move.file === file + 1 &&
+  //     // Regular capture
+  //     (!move.piece || move.piece!.color === pawn.color) &&
+  //     // en passant
+  //     (!board[rank * 8 + file + 1].piece ||
+  //       (board[rank * 8 + file + 1].piece &&
+  //         !board[rank * 8 + file + 1].piece!.params.get("movedTwo")))
+  //   )
+  //     moves.delete(move);
+  // });
+
+  return deletions;
 }

@@ -12,8 +12,7 @@ interface Props {
 
 const Piece = memo(({ id, color, type, src }: Props) => {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({
-    id: id,
-    //disabled: color === "white" ? !whiteCanMove : whiteCanMove,
+    id,
   });
 
   const style = transform

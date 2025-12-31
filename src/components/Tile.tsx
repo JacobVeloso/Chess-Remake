@@ -1,7 +1,7 @@
 import "./Tile.css";
 import Piece from "./Piece";
 import { useDroppable } from "@dnd-kit/core";
-import type { TileData, color } from "./types";
+import type { TileData, TileState, color } from "./types";
 import { memo } from "react";
 
 export function isAttacked(tile: TileData, pieceColor: color): boolean {
@@ -14,29 +14,29 @@ export function isAttacked(tile: TileData, pieceColor: color): boolean {
 const FILES = "abcdefgh";
 
 interface Props {
-  tileData: TileData;
+  tileState: TileState;
   active: boolean;
 }
 
-const Tile = memo(({ tileData, active }: Props) => {
+const Tile = memo(({ tileState, active }: Props) => {
   const { setNodeRef } = useDroppable({
-    id: tileData.id,
+    id: tileState.id,
   });
-  const piece = tileData.piece;
+  const piece = tileState.piece;
   return (
     <div
       ref={setNodeRef}
       className={
-        "square-" + tileData.color[0] + " tile" + (active ? " attacked" : "")
+        "square-" + tileState.color[0] + " tile" + (active ? " attacked" : "")
       }
-      id={FILES[tileData.file] + tileData.rank}
+      id={FILES[tileState.file] + tileState.rank}
     >
       {piece ? (
         <Piece
           id={piece!.id}
           color={piece!.color}
           type={piece!.type}
-          src={tileData.piece?.src ?? ""}
+          src={tileState.piece?.src ?? ""}
         />
       ) : null}
     </div>
