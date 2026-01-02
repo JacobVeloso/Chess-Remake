@@ -1,4 +1,5 @@
-import type { dimension, PieceData, TileData } from "../types.ts";
+import type { dimension, PieceData, TileData, type } from "../types.ts";
+import { calculateMoves } from "../MoveCalculation.ts";
 
 export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   piece.moves.get("forward")?.forEach((move) => {
@@ -132,9 +133,7 @@ export function checkPawnMoves(
   if (forward.piece) deletions.add(forward);
 
   // Check two square move
-  //console.log(pawn.rank + " " + pawn.file);
   if (pawn.moves.get("two square")!.size > 0) {
-    //console.log("> 0");
     const twoSquare = pawn.moves.get("two square")!.values().next().value!;
     if (twoSquare.piece) deletions.add(twoSquare);
   }
@@ -166,33 +165,54 @@ export function checkPawnMoves(
     )
       deletions.add(right);
   }
-
-  // moves.forEach((move) => {
-  //   // Check forward moves
-  //   if (move.file === file && move.piece) moves.delete(move);
-  //   // check left move
-  //   else if (
-  //     move.file === file - 1 &&
-  //     // Regular capture
-  //     (!move.piece || move.piece!.color === pawn.color) &&
-  //     // en passant
-  //     (!board[rank * 8 + file - 1].piece ||
-  //       (board[rank * 8 + file - 1].piece &&
-  //         !board[rank * 8 + file - 1].piece!.params.get("movedTwo")))
-  //   )
-  //     moves.delete(move);
-  //   // check right move
-  //   else if (
-  //     move.file === file + 1 &&
-  //     // Regular capture
-  //     (!move.piece || move.piece!.color === pawn.color) &&
-  //     // en passant
-  //     (!board[rank * 8 + file + 1].piece ||
-  //       (board[rank * 8 + file + 1].piece &&
-  //         !board[rank * 8 + file + 1].piece!.params.get("movedTwo")))
-  //   )
-  //     moves.delete(move);
-  // });
-
   return deletions;
+}
+
+export function promote(
+  board: TileData[],
+  piece: PieceData,
+  newType: type
+): void {
+  if (piece.type !== "pawn") return;
+
+  // Set new move types
+  switch (newType) {
+    case "queen":
+      piece.moves.set("N-S", new Set<TileData>());
+      piece.moves.set("W-E", new Set<TileData>());
+      piece.moves.set("NW-SE", new Set<TileData>());
+      piece.moves.set("NE-SW", new Set<TileData>());
+      break;
+    case "rook":
+      piece.moves.set("N-S", new Set<TileData>());
+      piece.moves.set("W-E", new Set<TileData>());
+      break;
+    case "bishop":
+      piece.moves.set("NW-SE", new Set<TileData>());
+      piece.moves.set("NE-SW", new Set<TileData>());
+      break;
+    case "knight":
+      piece.moves.set("all", new Set<TileData>());
+      break;
+    default:
+      return;
+  }
+
+  // Update type of piece
+  piece.type = newType;
+
+  // Remove pawn attributes
+  for (const move of piece.moves.get("forward")!) move.attackers.delete(piece);
+  piece.moves.delete("forward");
+  for (const move of piece.moves.get("left capture")!)
+    move.attackers.delete(piece);
+  piece.moves.delete("left capture");
+  for (const move of piece.moves.get("right capture")!)
+    move.attackers.delete(piece);
+  piece.moves.delete("right capture");
+  piece.moves.delete("two square");
+  piece.params.delete("movedTwo");
+
+  // Recaulculate piece moves
+  calculateMoves(piece, board, [piece.rank, piece.file]);
 }

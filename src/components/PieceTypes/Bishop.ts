@@ -1,4 +1,5 @@
 import type { dimension, PieceData, TileData } from "../types.ts";
+import { addStraightMoves } from "./Queen.ts";
 
 export function bishopMoves(
   piece: PieceData,
@@ -10,90 +11,95 @@ export function bishopMoves(
 
   // Determine which axis bishop moved along
   const [prevRank, prevFile] = prevPos;
+
+  const moved = rank !== prevRank || file !== prevFile;
+
   if (
     (prevRank > piece.rank && prevFile < piece.file) ||
-    (prevRank < piece.rank && prevFile > piece.file)
+    (prevRank < piece.rank && prevFile > piece.file) ||
+    !moved
   ) {
-    // Remove current position
-    piece.moves.get("NE-SW")?.delete(board[rank * 8 + file]);
-    board[rank * 8 + file].attackers.delete(piece);
+    if (moved) {
+      // Remove current position
+      piece.moves.get("NE-SW")?.delete(board[rank * 8 + file]);
+      board[rank * 8 + file].attackers.delete(piece);
 
-    // Add previous position
-    piece.moves.get("NE-SW")?.add(board[prevRank * 8 + prevFile]);
-    moves.add(board[prevRank * 8 + prevFile]);
+      // Add previous position
+      piece.moves.get("NE-SW")?.add(board[prevRank * 8 + prevFile]);
+      moves.add(board[prevRank * 8 + prevFile]);
 
-    // Remove all moves along NW-SE diagonal
-    piece.moves.get("NW-SE")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
-    piece.moves.get("NW-SE")?.clear();
+      // Remove all moves along NW-SE diagonal
+      piece.moves.get("NW-SE")?.forEach((move) => {
+        move.attackers.delete(piece);
+      });
+      piece.moves.get("NW-SE")?.clear();
+    }
 
     // Upper left diagonal
-    if (rank > 0 && file > 0) {
-      let i = rank - 1;
-      let j = file - 1;
-      do {
-        piece.moves.get("NW-SE")?.add(board[i * 8 + j]);
-        moves.add(board[i * 8 + j]);
-        i -= 1;
-        j -= 1;
-      } while (i >= 0 && j >= 0 && !board[(i + 1) * 8 + (j + 1)].piece);
-    }
+    if (rank > 0 && file > 0)
+      addStraightMoves(
+        board,
+        piece,
+        -1,
+        -1,
+        piece.moves.get("NW-SE") ?? new Set<TileData>(),
+        moves
+      );
 
     // Lower right diagonal
-    if (rank < 7 && file < 7) {
-      let i = rank + 1;
-      let j = file + 1;
-      do {
-        piece.moves.get("NW-SE")?.add(board[i * 8 + j]);
-        moves.add(board[i * 8 + j]);
-        i += 1;
-        j += 1;
-      } while (i < 8 && j < 8 && !board[(i - 1) * 8 + (j - 1)].piece);
-    }
+    if (rank < 7 && file < 7)
+      addStraightMoves(
+        board,
+        piece,
+        1,
+        1,
+        piece.moves.get("NW-SE") ?? new Set<TileData>(),
+        moves
+      );
   }
 
   if (
     (prevRank > piece.rank && prevFile > piece.file) ||
-    (prevRank < piece.rank && prevFile < piece.file)
+    (prevRank < piece.rank && prevFile < piece.file) ||
+    !moved
   ) {
-    // Remove current position
-    piece.moves.get("NW-SE")?.delete(board[rank * 8 + file]);
-    board[rank * 8 + file].attackers.delete(piece);
+    if (moved) {
+      // Remove current position
+      piece.moves.get("NW-SE")?.delete(board[rank * 8 + file]);
+      board[rank * 8 + file].attackers.delete(piece);
 
-    // Add previous position
-    piece.moves.get("NW-SE")?.add(board[prevRank * 8 + prevFile]);
-    moves.add(board[prevRank * 8 + prevFile]);
+      // Add previous position
+      piece.moves.get("NW-SE")?.add(board[prevRank * 8 + prevFile]);
+      moves.add(board[prevRank * 8 + prevFile]);
 
-    // Remove all moves along NE-SW diagonal
-    piece.moves.get("NE-SW")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
-    piece.moves.get("NE-SW")?.clear();
+      // Remove all moves along NE-SW diagonal
+      piece.moves.get("NE-SW")?.forEach((move) => {
+        move.attackers.delete(piece);
+      });
+      piece.moves.get("NE-SW")?.clear();
+    }
 
     // Upper right diagonal
-    if (rank > 0 && file < 7) {
-      let i = rank - 1;
-      let j = file + 1;
-      do {
-        piece.moves.get("NE-SW")?.add(board[i * 8 + j]);
-        moves.add(board[i * 8 + j]);
-        i -= 1;
-        j += 1;
-      } while (i >= 0 && j < 8 && !board[(i + 1) * 8 + (j - 1)].piece);
-    }
+    if (rank > 0 && file < 7)
+      addStraightMoves(
+        board,
+        piece,
+        -1,
+        1,
+        piece.moves.get("NE-SW") ?? new Set<TileData>(),
+        moves
+      );
 
     // Lower left diagonal
-    if (rank < 7 && file > 0) {
-      let i = rank + 1;
-      let j = file - 1;
-      do {
-        piece.moves.get("NE-SW")?.add(board[i * 8 + j]);
-        moves.add(board[i * 8 + j]);
-        i += 1;
-        j -= 1;
-      } while (i < 8 && j >= 0 && !board[(i - 1) * 8 + (j + 1)].piece);
-    }
+    if (rank < 7 && file > 0)
+      addStraightMoves(
+        board,
+        piece,
+        1,
+        -1,
+        piece.moves.get("NE-SW") ?? new Set<TileData>(),
+        moves
+      );
   }
   return moves;
 }

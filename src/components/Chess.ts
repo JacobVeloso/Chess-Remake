@@ -15,7 +15,7 @@ import {
   checkCastlingMoves,
   removeCastlingMove,
 } from "./PieceTypes/King";
-import { checkPawnMoves } from "./PieceTypes/Pawn";
+import { checkPawnMoves, promote } from "./PieceTypes/Pawn";
 import { calculateMoves, blockMoves, unblockMoves } from "./MoveCalculation";
 import { castle } from "./PieceTypes/King";
 
@@ -349,8 +349,14 @@ export function applyMove(board: BoardData, move: Move): BoardData {
     piece.rank = targetTile.rank;
     piece.file = targetTile.file;
 
+    // Promote if pawn reached end of board
+    if (
+      (piece.type === "pawn" && piece.color === "white" && piece.rank === 0) ||
+      (piece.color === "black" && piece.rank === 7)
+    )
+      promote(board.tiles, piece, "queen"); // TODO: Allow user to choose piece
     // Recalculate possible moves for piece
-    calculateMoves(piece, board.tiles, [sourceTile.rank, sourceTile.file]);
+    else calculateMoves(piece, board.tiles, [sourceTile.rank, sourceTile.file]);
   }
 
   // Recalculate possible moves for pieces interacting with source & target tiles

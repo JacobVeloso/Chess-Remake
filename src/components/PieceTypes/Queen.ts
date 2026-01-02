@@ -33,38 +33,43 @@ export function queenMoves(
   board: TileData[],
   prevPos: [dimension, dimension]
 ): Set<TileData> {
+  // TODO: calculate all moves if prevPos = currPos
   const [rank, file] = [piece.rank, piece.file];
   const [prevRank, prevFile] = prevPos;
   const moveAxis =
-    rank === prevRank
+    rank === prevRank && file !== prevFile
       ? piece.moves.get("W-E")
-      : file === prevFile
+      : rank !== prevRank && file === prevFile
       ? piece.moves.get("N-S")
-      : rank > prevRank && file > prevFile
+      : (rank > prevRank && file > prevFile) ||
+        (rank < prevRank && file < prevFile)
       ? piece.moves.get("NW-SE")
-      : piece.moves.get("NE-SW");
-
-  if (!moveAxis) return new Set<TileData>(); // TODO raise error
+      : (rank > prevRank && file < prevFile) ||
+        (rank < prevRank && file > prevFile)
+      ? piece.moves.get("NE-SW")
+      : null;
 
   const moves = new Set<TileData>();
 
-  // Remove current position
-  moveAxis.delete(board[rank * 8 + file]);
-  board[rank * 8 + file].attackers.delete(piece);
+  if (moveAxis) {
+    // Remove current position
+    moveAxis.delete(board[rank * 8 + file]);
+    board[rank * 8 + file].attackers.delete(piece);
 
-  // Add previous position
-  moveAxis.add(board[prevRank * 8 + prevFile]);
-  moves.add(board[prevRank * 8 + prevFile]);
+    // Add previous position
+    moveAxis.add(board[prevRank * 8 + prevFile]);
+    moves.add(board[prevRank * 8 + prevFile]);
 
-  // Delete all other moves
-  for (const [_, moveType] of piece.moves) {
-    if (moveType !== moveAxis) {
-      for (const move of moveType) move.attackers.delete(piece);
-      moveType.clear();
+    // Delete all other moves
+    for (const [_, moveType] of piece.moves) {
+      if (moveType !== moveAxis) {
+        for (const move of moveType) move.attackers.delete(piece);
+        moveType.clear();
+      }
     }
   }
 
-  if (file !== prevFile) {
+  if (file !== prevFile || !moveAxis) {
     // Add upward moves
     if (rank > 0)
       addStraightMoves(
@@ -88,7 +93,7 @@ export function queenMoves(
       );
   }
 
-  if (rank !== prevRank) {
+  if (rank !== prevRank || !moveAxis) {
     // Add left moves
     if (file > 0)
       addStraightMoves(
@@ -113,8 +118,9 @@ export function queenMoves(
   }
 
   if (
-    (rank <= prevRank || file <= prevFile) &&
-    (rank >= prevRank || file >= prevFile)
+    ((rank <= prevRank || file <= prevFile) &&
+      (rank >= prevRank || file >= prevFile)) ||
+    !moveAxis
   ) {
     // Add upper left diagnoal moves
     if (rank > 0 && file > 0)
@@ -140,8 +146,9 @@ export function queenMoves(
   }
 
   if (
-    (rank <= prevRank || file >= prevFile) &&
-    (rank >= prevRank || file <= prevFile)
+    ((rank <= prevRank || file >= prevFile) &&
+      (rank >= prevRank || file <= prevFile)) ||
+    !moveAxis
   ) {
     // Add upper right diagonal moves
     if (rank > 0 && file < 7)
