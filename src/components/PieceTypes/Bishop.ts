@@ -14,21 +14,26 @@ export function bishopMoves(
     (prevRank > piece.rank && prevFile < piece.file) ||
     (prevRank < piece.rank && prevFile > piece.file)
   ) {
-    piece.moves.get("NW")?.forEach((move) => {
+    // Remove current position
+    piece.moves.get("NE-SW")?.delete(board[rank * 8 + file]);
+    board[rank * 8 + file].attackers.delete(piece);
+
+    // Add previous position
+    piece.moves.get("NE-SW")?.add(board[prevRank * 8 + prevFile]);
+    moves.add(board[prevRank * 8 + prevFile]);
+
+    // Remove all moves along NW-SE diagonal
+    piece.moves.get("NW-SE")?.forEach((move) => {
       move.attackers.delete(piece);
     });
-    piece.moves.get("NW")?.clear();
-    piece.moves.get("SE")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
-    piece.moves.get("SE")?.clear();
+    piece.moves.get("NW-SE")?.clear();
 
     // Upper left diagonal
     if (rank > 0 && file > 0) {
       let i = rank - 1;
       let j = file - 1;
       do {
-        piece.moves.get("NW")?.add(board[i * 8 + j]);
+        piece.moves.get("NW-SE")?.add(board[i * 8 + j]);
         moves.add(board[i * 8 + j]);
         i -= 1;
         j -= 1;
@@ -40,36 +45,38 @@ export function bishopMoves(
       let i = rank + 1;
       let j = file + 1;
       do {
-        piece.moves.get("SE")?.add(board[i * 8 + j]);
+        piece.moves.get("NW-SE")?.add(board[i * 8 + j]);
         moves.add(board[i * 8 + j]);
         i += 1;
         j += 1;
       } while (i < 8 && j < 8 && !board[(i - 1) * 8 + (j - 1)].piece);
     }
-
-    // Add previous position
-    moves.add(board[prevRank * 8 + prevFile]);
   }
 
   if (
     (prevRank > piece.rank && prevFile > piece.file) ||
     (prevRank < piece.rank && prevFile < piece.file)
   ) {
-    piece.moves.get("NE")?.forEach((move) => {
+    // Remove current position
+    piece.moves.get("NW-SE")?.delete(board[rank * 8 + file]);
+    board[rank * 8 + file].attackers.delete(piece);
+
+    // Add previous position
+    piece.moves.get("NW-SE")?.add(board[prevRank * 8 + prevFile]);
+    moves.add(board[prevRank * 8 + prevFile]);
+
+    // Remove all moves along NE-SW diagonal
+    piece.moves.get("NE-SW")?.forEach((move) => {
       move.attackers.delete(piece);
     });
-    piece.moves.get("NE")?.clear();
-    piece.moves.get("SW")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
-    piece.moves.get("SW")?.clear();
+    piece.moves.get("NE-SW")?.clear();
 
     // Upper right diagonal
     if (rank > 0 && file < 7) {
       let i = rank - 1;
       let j = file + 1;
       do {
-        piece.moves.get("NE")?.add(board[i * 8 + j]);
+        piece.moves.get("NE-SW")?.add(board[i * 8 + j]);
         moves.add(board[i * 8 + j]);
         i -= 1;
         j += 1;
@@ -81,15 +88,12 @@ export function bishopMoves(
       let i = rank + 1;
       let j = file - 1;
       do {
-        piece.moves.get("SW")?.add(board[i * 8 + j]);
+        piece.moves.get("NE-SW")?.add(board[i * 8 + j]);
         moves.add(board[i * 8 + j]);
         i += 1;
         j -= 1;
       } while (i < 8 && j >= 0 && !board[(i - 1) * 8 + (j + 1)].piece);
     }
-
-    // Add previous position
-    moves.add(board[prevRank * 8 + prevFile]);
   }
   return moves;
 }
@@ -105,19 +109,19 @@ export function bishopBlock(
   if (piece.rank > blockedRank && piece.file > blockedFile) {
     rankDirection = -1;
     fileDirection = -1;
-    moves = piece.moves.get("NW") ?? new Set<TileData>();
+    moves = piece.moves.get("NW-SE") ?? new Set<TileData>();
   } else if (piece.rank > blockedRank && piece.file < blockedFile) {
     rankDirection = -1;
     fileDirection = 1;
-    moves = piece.moves.get("NE") ?? new Set<TileData>();
+    moves = piece.moves.get("NE-SW") ?? new Set<TileData>();
   } else if (piece.rank < blockedRank && piece.file < blockedFile) {
     rankDirection = 1;
     fileDirection = 1;
-    moves = piece.moves.get("SE") ?? new Set<TileData>();
+    moves = piece.moves.get("NW-SE") ?? new Set<TileData>();
   } else {
     rankDirection = 1;
     fileDirection = -1;
-    moves = piece.moves.get("SW") ?? new Set<TileData>();
+    moves = piece.moves.get("NE-SW") ?? new Set<TileData>();
   }
 
   const blockedMoves = new Set<TileData>();
@@ -146,37 +150,56 @@ export function bishopUnblock(
   if (piece.rank > unblockedRank && piece.file > unblockedFile) {
     rankDirection = -1;
     fileDirection = -1;
-    moves = piece.moves.get("NW") ?? new Set<TileData>();
+    moves = piece.moves.get("NW-SE") ?? new Set<TileData>();
   } else if (piece.rank > unblockedRank && piece.file < unblockedFile) {
     rankDirection = -1;
     fileDirection = 1;
-    moves = piece.moves.get("NE") ?? new Set<TileData>();
+    moves = piece.moves.get("NE-SW") ?? new Set<TileData>();
   } else if (piece.rank < unblockedRank && piece.file < unblockedFile) {
     rankDirection = 1;
     fileDirection = 1;
-    moves = piece.moves.get("SE") ?? new Set<TileData>();
+    moves = piece.moves.get("NW-SE") ?? new Set<TileData>();
   } else {
     rankDirection = 1;
     fileDirection = -1;
-    moves = piece.moves.get("SW") ?? new Set<TileData>();
+    moves = piece.moves.get("NE-SW") ?? new Set<TileData>();
   }
 
   const unblockedMoves = new Set<TileData>();
 
-  // Insert moves now possible
-  let i = unblockedRank + rankDirection;
-  let j = unblockedFile + fileDirection;
-  do {
-    moves.add(board[i * 8 + j]);
-    unblockedMoves.add(board[i * 8 + j]);
-    i += rankDirection;
-    j += fileDirection;
-  } while (
-    i >= 0 &&
-    i < 8 &&
-    j >= 0 &&
-    j < 8 &&
-    !board[(i - rankDirection) * 8 + (j - fileDirection)].piece
-  );
+  if (
+    (rankDirection === -1 &&
+      fileDirection === -1 &&
+      unblockedRank > 0 &&
+      unblockedFile > 0) ||
+    (rankDirection === -1 &&
+      fileDirection === 1 &&
+      unblockedRank > 0 &&
+      unblockedFile < 7) ||
+    (rankDirection === 1 &&
+      fileDirection === 1 &&
+      unblockedRank < 7 &&
+      unblockedFile < 7) ||
+    (rankDirection === 1 &&
+      fileDirection === -1 &&
+      unblockedRank < 7 &&
+      unblockedFile > 0)
+  ) {
+    // Insert moves now possible
+    let i = unblockedRank + rankDirection;
+    let j = unblockedFile + fileDirection;
+    do {
+      moves.add(board[i * 8 + j]);
+      unblockedMoves.add(board[i * 8 + j]);
+      i += rankDirection;
+      j += fileDirection;
+    } while (
+      i >= 0 &&
+      i < 8 &&
+      j >= 0 &&
+      j < 8 &&
+      !board[(i - rankDirection) * 8 + (j - fileDirection)].piece
+    );
+  }
   return unblockedMoves;
 }

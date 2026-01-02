@@ -94,10 +94,8 @@ export function checkCastlingMoves(
       isAttacked(board[rank * 8 + 2], king.color) ||
       board[rank * 8 + 1].piece ||
       isAttacked(board[rank * 8 + 1], king.color)
-    ) {
-      // console.log("deleting left");
+    )
       deletions.add(leftCastle);
-    }
   }
 
   // Check right castle
@@ -110,9 +108,8 @@ export function checkCastlingMoves(
       isAttacked(board[rank * 8 + 5], king.color) ||
       board[rank * 8 + 6].piece ||
       isAttacked(board[rank * 8 + 6], king.color)
-    ) {
+    )
       deletions.add(rightCastle);
-    }
   }
   return deletions;
 }
@@ -137,7 +134,7 @@ export function castle(board: TileData[], move: Move): void {
   const king = move.piece;
   if (king.type !== "king" || king.params.get("hasMoved")) return;
   const rook =
-    +move.to < king.file
+    +move.to < +move.from
       ? board[king.rank * 8].piece
       : board[king.rank * 8 + 7].piece;
   if (!rook || rook.type !== "rook" || rook.params.get("hasMoved")) return;
@@ -145,22 +142,20 @@ export function castle(board: TileData[], move: Move): void {
   // Tiles interacted with
   const kingSourceTile = board[king.rank * 8 + king.file];
   const kingTargetTile =
-    +move.to < king.file
+    +move.to < +move.from
       ? board[king.rank * 8 + king.file - 2]
       : board[king.rank * 8 + king.file + 2];
   const rookSourceTile = board[rook.rank * 8 + rook.file];
   const rookTargetTile =
-    +move.to < king.file
-      ? board[king.rank * 8 + king.file - 1]
-      : board[king.rank * 8 + king.file + 1];
+    +move.to < +move.from ? board[king.rank * 8 + 3] : board[king.rank * 8 + 5];
 
   // Move pieces and update positions
   kingSourceTile.piece = null;
   kingTargetTile.piece = king;
   rookSourceTile.piece = null;
   rookTargetTile.piece = rook;
-  king.file = +move.to < king.file ? 2 : 6;
-  rook.file = +move.to < king.file ? 3 : 5;
+  king.file = +move.to < +move.from ? 2 : 6;
+  rook.file = +move.to < +move.from ? 3 : 5;
   king.params.set("hasMoved", true);
   rook.params.set("hasMoved", true);
 

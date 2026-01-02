@@ -237,13 +237,14 @@ export function calculateLegalMoves(
 
   pieces.forEach((piece) => {
     let pieceMoves = new Set<TileData>();
-    piece.moves.forEach((moveType, _) => {
-      moveType.forEach((move) => {
+
+    for (const [_, moveType] of piece.moves) {
+      for (const move of moveType) {
         // Only add moves that do not capture own piece
         if (!move.piece || move.piece.color !== piece.color)
           pieceMoves.add(move);
-      });
-    });
+      }
+    }
 
     // Filter captures for pawns
     if (piece.type === "pawn") {
@@ -294,47 +295,9 @@ export function applyMove(board: BoardData, move: Move): BoardData {
   const sourceTile = board.tiles[+move.from];
   const targetTile = board.tiles[+move.to];
 
-  // // Rook move for castling
-  // let castlingRookMove: Move | null = null;
-
   // Extra checks for kings
   if (piece.type === "king" && Math.abs(+move.from - +move.to) === 2) {
     castle(board.tiles, move);
-
-    // TODO: recalculate moves + position for rook
-    // Check if king castled
-    // if (Math.abs(+move.from - +move.to) === 2) {
-    //   if (piece.color === "black" && +move.to < +move.from) {
-    //     // board.tiles[3].piece = board.tiles[0].piece;
-    //     // board.tiles[0].piece = null;
-    //     castlingRookMove = { from: "0", to: "3", piece: board.tiles[0].piece! };
-    //   } else if (piece.color === "black" && +move.to > +move.from) {
-    //     // board.tiles[5].piece = board.tiles[7].piece;
-    //     // board.tiles[7].piece = null;
-    //     castlingRookMove = { from: "7", to: "5", piece: board.tiles[7].piece! };
-    //   } else if (piece.color === "white" && +move.to < +move.from) {
-    //     // board.tiles[59].piece = board.tiles[56].piece;
-    //     // board.tiles[56].piece = null;
-    //     castlingRookMove = {
-    //       from: "56",
-    //       to: "59",
-    //       piece: board.tiles[56].piece!,
-    //     };
-    //   } else if (piece.color === "white" && +move.to > +move.from) {
-    //     // board.tiles[61].piece = board.tiles[63].piece;
-    //     // board.tiles[63].piece = null;
-    //     castlingRookMove = {
-    //       from: "63",
-    //       to: "61",
-    //       piece: board.tiles[63].piece!,
-    //     };
-    //   }
-
-    // }
-
-    // // Remove both castling moves for king
-    // removeCastlingMove(board.tiles, piece, "left");
-    // removeCastlingMove(board.tiles, piece, "right");
   } else {
     if (piece.type === "king") piece.params.set("hasMoved", true);
     // Extra checks for pawns
@@ -388,22 +351,19 @@ export function applyMove(board: BoardData, move: Move): BoardData {
 
     // Recalculate possible moves for piece
     calculateMoves(piece, board.tiles, [sourceTile.rank, sourceTile.file]);
-
-    console.log(piece.type + " " + piece.rank + " " + piece.file);
-    for (const moveType of piece.moves.values()) {
-      for (const move of moveType) {
-        console.log(move.rank + " " + move.file);
-      }
-    }
   }
 
   // Recalculate possible moves for pieces interacting with source & target tiles
-  sourceTile.attackers.forEach((piece) =>
-    unblockMoves(piece, board.tiles, [sourceTile.rank, sourceTile.file])
-  );
+  sourceTile.attackers.forEach((unblockedPiece) => {
+    if (unblockedPiece !== piece)
+      unblockMoves(unblockedPiece, board.tiles, [
+        sourceTile.rank,
+        sourceTile.file,
+      ]);
+  });
 
-  targetTile.attackers.forEach((piece) =>
-    blockMoves(piece, board.tiles, [targetTile.rank, targetTile.file])
+  targetTile.attackers.forEach((blockedPiece) =>
+    blockMoves(blockedPiece, board.tiles, [targetTile.rank, targetTile.file])
   );
 
   return board;
@@ -611,35 +571,27 @@ function setupInitialBoard(): BoardData {
 
   // Set rook moves
   const leftBlackRook = TILES[0 * 8 + 0].piece!;
-  leftBlackRook.moves.set("N", new Set<TileData>());
-  leftBlackRook.moves.set("E", new Set<TileData>([TILES[0 * 8 + 1]]));
-  TILES[0 * 8 + 1].attackers.add(leftBlackRook);
-  leftBlackRook.moves.set("S", new Set<TileData>([TILES[1 * 8 + 0]]));
+  leftBlackRook.moves.set("N-S", new Set<TileData>([TILES[1 * 8 + 0]]));
   TILES[1 * 8 + 0].attackers.add(leftBlackRook);
-  leftBlackRook.moves.set("W", new Set<TileData>());
+  leftBlackRook.moves.set("W-E", new Set<TileData>([TILES[0 * 8 + 1]]));
+  TILES[0 * 8 + 1].attackers.add(leftBlackRook);
 
   const rightBlackRook = TILES[0 * 8 + 7].piece!;
-  rightBlackRook.moves.set("N", new Set<TileData>());
-  rightBlackRook.moves.set("E", new Set<TileData>());
-  rightBlackRook.moves.set("S", new Set<TileData>([TILES[1 * 8 + 7]]));
+  rightBlackRook.moves.set("N-S", new Set<TileData>([TILES[1 * 8 + 7]]));
   TILES[1 * 8 + 7].attackers.add(rightBlackRook);
-  rightBlackRook.moves.set("W", new Set<TileData>([TILES[0 * 8 + 6]]));
+  rightBlackRook.moves.set("W-E", new Set<TileData>([TILES[0 * 8 + 6]]));
   TILES[0 * 8 + 6].attackers.add(rightBlackRook);
 
   const leftWhiteRook = TILES[7 * 8 + 0].piece!;
-  leftWhiteRook.moves.set("N", new Set<TileData>([TILES[6 * 8 + 0]]));
+  leftWhiteRook.moves.set("N-S", new Set<TileData>([TILES[6 * 8 + 0]]));
   TILES[6 * 8 + 0].attackers.add(leftWhiteRook);
-  leftWhiteRook.moves.set("E", new Set<TileData>([TILES[7 * 8 + 1]]));
+  leftWhiteRook.moves.set("W-E", new Set<TileData>([TILES[7 * 8 + 1]]));
   TILES[7 * 8 + 1].attackers.add(leftWhiteRook);
-  leftWhiteRook.moves.set("S", new Set<TileData>());
-  leftWhiteRook.moves.set("W", new Set<TileData>());
 
   const rightWhiteRook = TILES[7 * 8 + 7].piece!;
-  rightWhiteRook.moves.set("N", new Set<TileData>([TILES[6 * 8 + 7]]));
+  rightWhiteRook.moves.set("N-S", new Set<TileData>([TILES[6 * 8 + 7]]));
   TILES[6 * 8 + 7].attackers.add(rightWhiteRook);
-  rightWhiteRook.moves.set("E", new Set<TileData>());
-  rightWhiteRook.moves.set("S", new Set<TileData>());
-  rightWhiteRook.moves.set("W", new Set<TileData>([TILES[7 * 8 + 6]]));
+  rightWhiteRook.moves.set("W-E", new Set<TileData>([TILES[7 * 8 + 6]]));
   TILES[7 * 8 + 6].attackers.add(rightWhiteRook);
 
   // Set knight moves
@@ -681,100 +633,94 @@ function setupInitialBoard(): BoardData {
 
   // Set bishop moves
   const leftBlackBishop = TILES[0 * 8 + 2].piece!;
-  leftBlackBishop.moves.set("NW", new Set<TileData>());
-  leftBlackBishop.moves.set("NE", new Set<TileData>());
-  leftBlackBishop.moves.set("SW", new Set<TileData>([TILES[1 * 8 + 1]]));
-  TILES[1 * 8 + 1].attackers.add(leftBlackBishop);
-  leftBlackBishop.moves.set("SE", new Set<TileData>([TILES[1 * 8 + 3]]));
+  leftBlackBishop.moves.set("NW-SE", new Set<TileData>([TILES[1 * 8 + 3]]));
   TILES[1 * 8 + 3].attackers.add(leftBlackBishop);
+  leftBlackBishop.moves.set("NE-SW", new Set<TileData>([TILES[1 * 8 + 1]]));
+  TILES[1 * 8 + 1].attackers.add(leftBlackBishop);
 
   const rightBlackBishop = TILES[0 * 8 + 5].piece!;
-  rightBlackBishop.moves.set("NW", new Set<TileData>());
-  rightBlackBishop.moves.set("NE", new Set<TileData>());
-  rightBlackBishop.moves.set("SW", new Set<TileData>([TILES[1 * 8 + 4]]));
-  TILES[1 * 8 + 4].attackers.add(rightBlackBishop);
-  rightBlackBishop.moves.set("SE", new Set<TileData>([TILES[1 * 8 + 6]]));
+  rightBlackBishop.moves.set("NW-SE", new Set<TileData>([TILES[1 * 8 + 6]]));
   TILES[1 * 8 + 6].attackers.add(rightBlackBishop);
+  rightBlackBishop.moves.set("NE-SW", new Set<TileData>([TILES[1 * 8 + 4]]));
+  TILES[1 * 8 + 4].attackers.add(rightBlackBishop);
 
   const leftWhiteBishop = TILES[7 * 8 + 2].piece!;
-  leftWhiteBishop.moves.set("NW", new Set<TileData>([TILES[6 * 8 + 1]]));
+  leftWhiteBishop.moves.set("NW-SE", new Set<TileData>([TILES[6 * 8 + 1]]));
   TILES[6 * 8 + 1].attackers.add(leftWhiteBishop);
-  leftWhiteBishop.moves.set("NE", new Set<TileData>([TILES[6 * 8 + 3]]));
+  leftWhiteBishop.moves.set("NE-SW", new Set<TileData>([TILES[6 * 8 + 3]]));
   TILES[6 * 8 + 3].attackers.add(leftWhiteBishop);
-  leftWhiteBishop.moves.set("SW", new Set<TileData>());
-  leftWhiteBishop.moves.set("SE", new Set<TileData>());
 
   const rightWhiteBishop = TILES[7 * 8 + 5].piece!;
-  rightWhiteBishop.moves.set("NW", new Set<TileData>([TILES[6 * 8 + 4]]));
+  rightWhiteBishop.moves.set("NW-SE", new Set<TileData>([TILES[6 * 8 + 4]]));
   TILES[6 * 8 + 4].attackers.add(rightWhiteBishop);
-  rightWhiteBishop.moves.set("NE", new Set<TileData>([TILES[6 * 8 + 6]]));
+  rightWhiteBishop.moves.set("NE-SW", new Set<TileData>([TILES[6 * 8 + 6]]));
   TILES[6 * 8 + 6].attackers.add(rightWhiteBishop);
-  rightWhiteBishop.moves.set("SW", new Set<TileData>());
-  rightWhiteBishop.moves.set("SE", new Set<TileData>());
 
   // Set queen moves
   const blackQueen = TILES[0 * 8 + 3].piece!;
-  blackQueen.moves.set("NE", new Set<TileData>());
-  blackQueen.moves.set("N", new Set<TileData>());
-  blackQueen.moves.set("NW", new Set<TileData>());
-  blackQueen.moves.set("W", new Set<TileData>([TILES[0 * 8 + 2]]));
+  blackQueen.moves.set(
+    "W-E",
+    new Set<TileData>([TILES[0 * 8 + 2], TILES[0 * 8 + 4]])
+  );
   TILES[0 * 8 + 2].attackers.add(blackQueen);
-  blackQueen.moves.set("SW", new Set<TileData>([TILES[1 * 8 + 2]]));
-  TILES[1 * 8 + 2].attackers.add(blackQueen);
-  blackQueen.moves.set("S", new Set<TileData>([TILES[1 * 8 + 3]]));
-  TILES[1 * 8 + 3].attackers.add(blackQueen);
-  blackQueen.moves.set("SE", new Set<TileData>([TILES[1 * 8 + 4]]));
-  TILES[1 * 8 + 4].attackers.add(blackQueen);
-  blackQueen.moves.set("E", new Set<TileData>([TILES[0 * 8 + 4]]));
   TILES[0 * 8 + 4].attackers.add(blackQueen);
+  blackQueen.moves.set("NW-SE", new Set<TileData>([TILES[1 * 8 + 4]]));
+  TILES[1 * 8 + 4].attackers.add(blackQueen);
+  blackQueen.moves.set("N-S", new Set<TileData>([TILES[1 * 8 + 3]]));
+  TILES[1 * 8 + 3].attackers.add(blackQueen);
+  blackQueen.moves.set("NE-SW", new Set<TileData>([TILES[1 * 8 + 2]]));
+  TILES[1 * 8 + 2].attackers.add(blackQueen);
 
   const whiteQueen = TILES[7 * 8 + 3].piece!;
-  whiteQueen.moves.set("W", new Set<TileData>([TILES[7 * 8 + 2]]));
+  whiteQueen.moves.set(
+    "W-E",
+    new Set<TileData>([TILES[7 * 8 + 2], TILES[7 * 8 + 4]])
+  );
   TILES[7 * 8 + 2].attackers.add(whiteQueen);
-  whiteQueen.moves.set("NW", new Set<TileData>([TILES[6 * 8 + 2]]));
-  TILES[6 * 8 + 2].attackers.add(whiteQueen);
-  whiteQueen.moves.set("N", new Set<TileData>([TILES[6 * 8 + 3]]));
-  TILES[6 * 8 + 3].attackers.add(whiteQueen);
-  whiteQueen.moves.set("NE", new Set<TileData>([TILES[6 * 8 + 4]]));
-  TILES[6 * 8 + 4].attackers.add(whiteQueen);
-  whiteQueen.moves.set("E", new Set<TileData>([TILES[7 * 8 + 4]]));
   TILES[7 * 8 + 4].attackers.add(whiteQueen);
-  whiteQueen.moves.set("SE", new Set<TileData>());
-  whiteQueen.moves.set("S", new Set<TileData>());
-  whiteQueen.moves.set("SW", new Set<TileData>());
+  whiteQueen.moves.set("NW-SE", new Set<TileData>([TILES[6 * 8 + 2]]));
+  TILES[6 * 8 + 2].attackers.add(whiteQueen);
+  whiteQueen.moves.set("N-S", new Set<TileData>([TILES[6 * 8 + 3]]));
+  TILES[6 * 8 + 3].attackers.add(whiteQueen);
+  whiteQueen.moves.set("NE-SW", new Set<TileData>([TILES[6 * 8 + 4]]));
+  TILES[6 * 8 + 4].attackers.add(whiteQueen);
 
   // Set king moves
   const blackKing = TILES[0 * 8 + 4].piece!;
-  blackKing.moves.set("NE", new Set<TileData>());
-  blackKing.moves.set("N", new Set<TileData>());
-  blackKing.moves.set("NW", new Set<TileData>());
-  blackKing.moves.set("W", new Set<TileData>([TILES[0 * 8 + 3]]));
+  blackKing.moves.set(
+    "standard",
+    new Set<TileData>([
+      TILES[0 * 8 + 3],
+      TILES[1 * 8 + 3],
+      TILES[1 * 8 + 4],
+      TILES[1 * 8 + 5],
+      TILES[0 * 8 + 5],
+    ])
+  );
   TILES[0 * 8 + 3].attackers.add(blackKing);
-  blackKing.moves.set("SW", new Set<TileData>([TILES[1 * 8 + 3]]));
   TILES[1 * 8 + 3].attackers.add(blackKing);
-  blackKing.moves.set("S", new Set<TileData>([TILES[1 * 8 + 4]]));
   TILES[1 * 8 + 4].attackers.add(blackKing);
-  blackKing.moves.set("SE", new Set<TileData>([TILES[1 * 8 + 5]]));
   TILES[1 * 8 + 5].attackers.add(blackKing);
-  blackKing.moves.set("E", new Set<TileData>([TILES[0 * 8 + 5]]));
   TILES[0 * 8 + 5].attackers.add(blackKing);
   blackKing.moves.set("leftCastle", new Set<TileData>([TILES[0 * 8 + 2]]));
   blackKing.moves.set("rightCastle", new Set<TileData>([TILES[0 * 8 + 6]]));
 
   const whiteKing = TILES[7 * 8 + 4].piece!;
-  whiteKing.moves.set("W", new Set<TileData>([TILES[7 * 8 + 3]]));
+  whiteKing.moves.set(
+    "W",
+    new Set<TileData>([
+      TILES[7 * 8 + 3],
+      TILES[6 * 8 + 3],
+      TILES[6 * 8 + 4],
+      TILES[6 * 8 + 5],
+      TILES[7 * 8 + 5],
+    ])
+  );
   TILES[7 * 8 + 3].attackers.add(whiteKing);
-  whiteKing.moves.set("NW", new Set<TileData>([TILES[6 * 8 + 3]]));
   TILES[6 * 8 + 3].attackers.add(whiteKing);
-  whiteKing.moves.set("N", new Set<TileData>([TILES[6 * 8 + 4]]));
   TILES[6 * 8 + 4].attackers.add(whiteKing);
-  whiteKing.moves.set("NE", new Set<TileData>([TILES[6 * 8 + 5]]));
   TILES[6 * 8 + 5].attackers.add(whiteKing);
-  whiteKing.moves.set("E", new Set<TileData>([TILES[7 * 8 + 5]]));
   TILES[7 * 8 + 5].attackers.add(whiteKing);
-  whiteKing.moves.set("SE", new Set<TileData>());
-  whiteKing.moves.set("S", new Set<TileData>());
-  whiteKing.moves.set("SW", new Set<TileData>());
   whiteKing.moves.set("leftCastle", new Set<TileData>([TILES[7 * 8 + 2]]));
   whiteKing.moves.set("rightCastle", new Set<TileData>([TILES[7 * 8 + 6]]));
 

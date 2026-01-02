@@ -96,7 +96,7 @@ export function unblockMoves(
       unblockedMoves = bishopUnblock(piece, board, blockedPos);
       break;
     case "queen":
-      unblockedMoves = queenUnblock(piece, blockedPos);
+      unblockedMoves = queenUnblock(piece, board, blockedPos);
       break;
     case "king":
       unblockedMoves = new Set<TileData>();

@@ -10,80 +10,85 @@ export function rookMoves(
 
   // Determine which axis rook moved along
   const [prevRank, prevFile] = prevPos;
-  if (prevFile !== piece.file) {
-    piece.moves.get("N")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
-    piece.moves.get("N")?.clear();
-    piece.moves.get("S")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
-    piece.moves.get("S")?.clear();
 
-    // Up
+  if (prevFile !== piece.file) {
+    // Remove current position
+    piece.moves.get("W-E")?.delete(board[rank * 8 + file]);
+    board[rank * 8 + file].attackers.delete(piece);
+
+    // Add previous position
+    piece.moves.get("W-E")?.add(board[prevRank * 8 + prevFile]);
+    moves.add(board[prevRank * 8 + prevFile]);
+
+    // Remove all vertical moves
+    piece.moves.get("N-S")?.forEach((move) => {
+      move.attackers.delete(piece);
+    });
+    piece.moves.get("N-S")?.clear();
+
+    // Add new upward moves
     if (rank > 0) {
       let i = rank - 1;
       let j = file;
       do {
         const index = i * 8 + j;
-        piece.moves.get("N")?.add(board[index]);
+        piece.moves.get("N-S")?.add(board[index]);
         moves.add(board[index]);
         --i;
-      } while (i >= 0 && !board[(i - 1) * 8 + j].piece);
+      } while (i >= 0 && !board[(i + 1) * 8 + j].piece);
     }
 
-    // Down
+    // Add new downward moves
     if (rank < 7) {
       let i = rank + 1;
       let j = file;
       do {
         const index = i * 8 + j;
-        piece.moves.get("S")?.add(board[index]);
+        piece.moves.get("N-S")?.add(board[index]);
         moves.add(board[index]);
         ++i;
       } while (i < 8 && !board[(i - 1) * 8 + j].piece);
     }
-
-    // Add previous position
-    moves.add(board[prevRank * 8 + prevFile]);
   }
 
   if (prevRank !== piece.rank) {
-    piece.moves.get("W")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
-    piece.moves.get("W")?.clear();
-    piece.moves.get("E")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
-    piece.moves.get("E")?.clear();
+    // Remove current position
+    piece.moves.get("N-S")?.delete(board[rank * 8 + file]);
+    board[rank * 8 + file].attackers.delete(piece);
 
-    // Left
+    // Add previous position
+    piece.moves.get("N-S")?.add(board[prevRank * 8 + prevFile]);
+    moves.add(board[prevRank * 8 + prevFile]);
+
+    // Delete all horizontal moves
+    piece.moves.get("W-E")?.forEach((move) => {
+      move.attackers.delete(piece);
+    });
+    piece.moves.get("W-E")?.clear();
+
+    // Add new left moves
     if (file > 0) {
       let i = rank;
       let j = file - 1;
       do {
         const index = i * 8 + j;
-        piece.moves.get("W")?.add(board[index]);
+        piece.moves.get("W-E")?.add(board[index]);
         moves.add(board[index]);
         --j;
       } while (j >= 0 && !board[i * 8 + (j + 1)].piece);
     }
 
-    // Right
+    // Add new right moves
     if (file < 7) {
       let i = rank;
       let j = file + 1;
       do {
         const index = i * 8 + j;
-        piece.moves.get("E")?.add(board[index]);
+        piece.moves.get("W-E")?.add(board[index]);
         moves.add(board[index]);
         ++j;
       } while (j < 8 && !board[i * 8 + (j - 1)].piece);
     }
-
-    // Add previous position
-    moves.add(board[prevRank * 8 + prevFile]);
   }
   return moves;
 }
@@ -94,34 +99,22 @@ export function rookMovesAfterCastle(
 ): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
   const moves = new Set<TileData>();
-  const openVertical =
-    piece.color === "white" ? piece.moves.get("N") : piece.moves.get("S");
-  const blockedVertical =
-    piece.color === "white" ? piece.moves.get("S") : piece.moves.get("N");
-  const openHorizontal =
-    piece.file === 3 ? piece.moves.get("W") : piece.moves.get("E");
-  const blockedHorizontal =
-    piece.file === 3 ? piece.moves.get("E") : piece.moves.get("W");
 
   const verticalDir = piece.color === "white" ? -1 : 1;
   const horizontalDir = piece.file === 3 ? 1 : -1;
 
   // Clear all moves
-  openVertical?.forEach((move) => move.attackers.delete(piece));
-  openVertical?.clear();
-  blockedVertical?.forEach((move) => move.attackers.delete(piece));
-  blockedVertical?.clear();
-  openHorizontal?.forEach((move) => move.attackers.delete(piece));
-  openHorizontal?.clear();
-  blockedHorizontal?.forEach((move) => move.attackers.delete(piece));
-  blockedHorizontal?.clear();
+  piece.moves.get("N-S")?.forEach((move) => move.attackers.delete(piece));
+  piece.moves.get("N-S")?.clear();
+  piece.moves.get("W-E")?.forEach((move) => move.attackers.delete(piece));
+  piece.moves.get("W-E")?.clear();
 
-  // Recalculate moves for open vertical
+  // Recalculate upward moves
   let i = rank + verticalDir;
   let j = file;
   do {
     const index = i * 8 + j;
-    openVertical?.add(board[index]);
+    piece.moves.get("N-S")?.add(board[index]);
     i += verticalDir;
   } while (i >= 0 && i < 8 && !board[(i - verticalDir) * 8 + j].piece);
 
@@ -130,12 +123,12 @@ export function rookMovesAfterCastle(
   j += horizontalDir;
   do {
     const index = i * 8 + j;
-    openHorizontal?.add(board[index]);
+    piece.moves.get("W-E")?.add(board[index]);
     j += horizontalDir;
   } while (j >= 0 && j < 8 && !board[i * 8 + (j - horizontalDir)].piece);
 
   // Add move in direction of king
-  blockedHorizontal?.add(board[rank * 8 + file - (file === 3 ? 1 : -1)]);
+  piece.moves.get("W-E")?.add(board[rank * 8 + file - (file === 3 ? 1 : -1)]);
 
   return moves;
 }
@@ -150,16 +143,16 @@ export function rookBlock(
   let moves: Set<TileData>;
   if (piece.rank > blockedRank) {
     direction = -1;
-    moves = piece.moves.get("N") ?? new Set<TileData>();
+    moves = piece.moves.get("N-S") ?? new Set<TileData>();
   } else if (piece.rank < blockedRank) {
     direction = 1;
-    moves = piece.moves.get("S") ?? new Set<TileData>();
+    moves = piece.moves.get("N-S") ?? new Set<TileData>();
   } else if (piece.file > blockedFile) {
     direction = -1;
-    moves = piece.moves.get("W") ?? new Set<TileData>();
+    moves = piece.moves.get("W-E") ?? new Set<TileData>();
   } else {
     direction = 1;
-    moves = piece.moves.get("E") ?? new Set<TileData>();
+    moves = piece.moves.get("W-E") ?? new Set<TileData>();
   }
 
   const blockedMoves = new Set<TileData>();
@@ -188,35 +181,43 @@ export function rookUnblock(
   let moves: Set<TileData>;
   if (piece.rank > unblockedRank) {
     direction = -1;
-    moves = piece.moves.get("N") ?? new Set<TileData>();
+    moves = piece.moves.get("N-S") ?? new Set<TileData>();
   } else if (piece.rank < unblockedRank) {
     direction = 1;
-    moves = piece.moves.get("S") ?? new Set<TileData>();
+    moves = piece.moves.get("N-S") ?? new Set<TileData>();
   } else if (piece.file > unblockedFile) {
     direction = -1;
-    moves = piece.moves.get("W") ?? new Set<TileData>();
+    moves = piece.moves.get("W-E") ?? new Set<TileData>();
   } else {
     direction = 1;
-    moves = piece.moves.get("E") ?? new Set<TileData>();
+    moves = piece.moves.get("W-E") ?? new Set<TileData>();
   }
 
   const unblockedMoves = new Set<TileData>();
 
   // Insert moves now possible
-  if (piece.rank === unblockedRank) {
+  if (
+    piece.rank === unblockedRank &&
+    ((direction === 1 && unblockedFile < 7) ||
+      (direction === -1 && unblockedFile > 0))
+  ) {
     let i = unblockedFile + direction;
     do {
       moves.add(board[piece.rank * 8 + i]);
       unblockedMoves.add(board[piece.rank * 8 + i]);
       i += direction;
     } while (i >= 0 && i < 8 && !board[piece.rank * 8 + (i - direction)].piece);
-  } else {
+  } else if (
+    piece.file === unblockedFile &&
+    ((direction === 1 && unblockedRank < 7) ||
+      (direction === -1 && unblockedRank > 0))
+  ) {
     let i = unblockedRank + direction;
     do {
       moves.add(board[i * 8 + piece.file]);
       unblockedMoves.add(board[i * 8 + piece.file]);
       i += direction;
-    } while (i >= 0 && i < 8 && !board[(i - direction) * 8 + piece.file]);
+    } while (i >= 0 && i < 8 && !board[(i - direction) * 8 + piece.file].piece);
   }
 
   return unblockedMoves;
