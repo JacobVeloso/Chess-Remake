@@ -12,12 +12,14 @@ import type {
 } from "./types";
 import {
   checkBlocks,
+  filterAttackedTiles,
   checkCastlingMoves,
   removeCastlingMove,
 } from "./PieceTypes/King";
 import { checkPawnMoves, promote } from "./PieceTypes/Pawn";
 import { calculateMoves, blockMoves, unblockMoves } from "./MoveCalculation";
 import { castle } from "./PieceTypes/King";
+import { isAttacked } from "./Tile";
 
 /**
  * Checks if the piece at piecePos is pinned to their king at kingPos and determines all moves that can block the pin.
@@ -219,7 +221,7 @@ export function blockingMoves(
     }
   }
 
-  // If attacker is a knight, both cases fail - only blocking move is capturing knight itself
+  // If attacker is a knight/pawn, both cases fail - only blocking move is capturing knight itself
 
   return moves;
 }
@@ -227,7 +229,7 @@ export function blockingMoves(
 export function calculateLegalMoves(
   board: BoardData,
   turn: color
-): Map<PieceData["id"], Set<TileData["id"]>> {
+): Map<PieceData["id"], Set<TileData["id"]>> | null {
   const pieces = turn === "white" ? board.whitePieces : board.blackPieces;
   const king = Array.from(pieces).filter((piece) => piece.type === "king")[0];
 
@@ -250,11 +252,13 @@ export function calculateLegalMoves(
     if (piece.type === "pawn") {
       const illegalMoves = checkPawnMoves(board.tiles, piece);
       illegalMoves.forEach((move) => pieceMoves.delete(move));
-    }
-    // Filter castling for king
-    else if (piece.type === "king") {
+    } else if (piece.type === "king") {
+      // Filter castle moves for king
       const illegalCastles = checkCastlingMoves(board.tiles, piece);
       illegalCastles.forEach((move) => pieceMoves.delete(move));
+
+      // Filter out moves that would put king in check
+      pieceMoves = filterAttackedTiles(board.tiles, piece, pieceMoves);
     }
 
     // Filter by moves that can block check (if applicable)
@@ -275,7 +279,16 @@ export function calculateLegalMoves(
     );
   });
 
-  return moves;
+  // Check if there is at least one legal move
+  for (const moveSet of moves.values()) {
+    if (moveSet.size > 0) return moves;
+  }
+
+  // Checkmate
+  if (isAttacked(board.tiles[king.rank * 8 + king.file], turn)) return null;
+
+  // Stalemate
+  return new Map();
 }
 
 function deletePiece(board: BoardData, piece: PieceData): void {
@@ -791,7 +804,7 @@ function useChess() {
     from: TileData["id"],
     to: TileData["id"],
     legalMoves: Map<PieceData["id"], Set<TileData["id"]>>
-  ): Map<string, Set<string>> => {
+  ): Map<string, Set<string>> | null => {
     const piece = boardData.current.tiles[+from].piece;
     if (piece && legalMoves.get(piece.id)?.has(to)) {
       // Apply the move to the board

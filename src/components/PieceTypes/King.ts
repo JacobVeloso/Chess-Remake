@@ -62,14 +62,49 @@ export function checkBlocks(
     return king.moves.get("standard") ?? new Set<TileData>();
 
   // Calculate block filter
-  return new Set([
-    ...blockingMoves(
-      board,
-      [king.rank, king.file],
-      [attackers[0].rank, attackers[0].file]
-    ),
-    ...(king.moves.get("standard") ?? new Set<TileData>()),
-  ]);
+  return blockingMoves(
+    board,
+    [king.rank, king.file],
+    [attackers[0].rank, attackers[0].file]
+  );
+}
+
+export function filterAttackedTiles(
+  board: TileData[],
+  king: PieceData,
+  moves: Set<TileData>
+): Set<TileData> {
+  const [rank, file] = [king.rank, king.file];
+  const color = king.color;
+
+  // Filter out moves already attacked
+  for (const move of moves) {
+    if (isAttacked(move, color)) moves.delete(move);
+  }
+
+  // Filter out moves that are in line of attack
+  for (const attacker of board[rank * 8 + file].attackers) {
+    if (
+      attacker.color !== color &&
+      (attacker.type === "rook" ||
+        attacker.type === "bishop" ||
+        attacker.type === "queen")
+    ) {
+      const rankDirection =
+        attacker.rank < rank ? 1 : attacker.rank > rank ? -1 : 0;
+      const fileDirection =
+        attacker.file < file ? 1 : attacker.file > file ? -1 : 0;
+      if (
+        rank + rankDirection >= 0 &&
+        rank + rankDirection < 8 &&
+        file + fileDirection >= 0 &&
+        file + fileDirection < 8
+      )
+        moves.delete(board[(rank + rankDirection) * 8 + file + fileDirection]);
+    }
+  }
+
+  return moves;
 }
 
 export function checkCastlingMoves(

@@ -35,7 +35,7 @@ const Board = () => {
   function handleDragStart(event: DragStartEvent) {
     const pieceId = event.active.id as PieceData["id"];
     const piece = getPieceState(board, pieceId);
-    if (piece) setActive(getHighlightedTiles(moves, pieceId));
+    if (piece) setActive(getHighlightedTiles(moves ?? new Map(), pieceId));
   }
 
   function handleDragEnd(event: DragEndEvent) {
@@ -53,9 +53,11 @@ const Board = () => {
     if (!piece) return;
 
     // Check if tile is a legal move for the piece
-    if (moves.get(pieceId)?.has(targetTileId)) {
+    if (moves?.get(pieceId)?.has(targetTileId)) {
       const sourceTileId = board[piece.rank * 8 + piece.file].id;
       moves = movePiece(sourceTileId, targetTileId, moves);
+
+      if (moves === null) return; // End of game
     }
   }
 

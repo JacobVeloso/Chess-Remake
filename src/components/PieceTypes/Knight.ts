@@ -4,10 +4,13 @@ export function knightMoves(
   piece: PieceData,
   board: TileData[]
 ): Set<TileData> {
-  piece.moves.get("all")?.forEach((move) => {
-    move.attackers.delete(piece);
-  });
-  piece.moves.get("all")?.clear();
+  if (piece.moves.has("all")) {
+    piece.moves.get("all")?.forEach((move) => {
+      move.attackers.delete(piece);
+    });
+    piece.moves.get("all")?.clear();
+  } else piece.moves.set("all", new Set<TileData>());
+
   const moves = new Set<TileData>();
   const [rank, file] = [piece.rank, piece.file];
 
