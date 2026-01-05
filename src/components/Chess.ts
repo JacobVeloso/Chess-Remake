@@ -750,6 +750,84 @@ function setupInitialBoard(): BoardData {
   };
 }
 
+function createBoard(): TileData[] {
+  let tileID = 0;
+  return Array.from({ length: 64 }, (_, index) => {
+    const [rank, file]: [dimension, dimension] = [
+      Math.floor(index / 8) as dimension,
+      (index % 8) as dimension,
+    ];
+    const color: color = (rank + file) % 2 === 0 ? "white" : "black";
+
+    return {
+      id: "" + tileID++,
+      rank,
+      file,
+      color,
+      piece: null,
+      attackers: new Set<PieceData>(),
+    };
+  });
+}
+
+function setup(
+  pieces: [
+    Set<{ type: type; rank: dimension; file: dimension }>,
+    Set<{ type: type; rank: dimension; file: dimension }>
+  ]
+): BoardData {
+  const board = {
+    tiles: createBoard(),
+    whitePieces: new Set<PieceData>(),
+    blackPieces: new Set<PieceData>(),
+  };
+
+  let pieceID = 0;
+
+  const [whitePieces, blackPieces] = pieces;
+  for (const pieceData of whitePieces) {
+    const piece = {
+      id: "" + pieceID++,
+      color: "white" as color,
+      type: pieceData.type,
+      rank: pieceData.rank,
+      file: pieceData.file,
+      moves: new Map<string, Set<TileData>>(),
+      params: new Map<string, boolean>(),
+    };
+    if (pieceData.type === "pawn") piece.params.set("movedTwo", false);
+    else if (pieceData.type === "king" || pieceData.type === "rook")
+      piece.params.set("hasMoved", false);
+
+    board.tiles[pieceData.rank * 8 + pieceData.file].piece = piece;
+    board.whitePieces.add(piece);
+  }
+
+  for (const pieceData of blackPieces) {
+    const piece = {
+      id: "" + pieceID++,
+      color: "black" as color,
+      type: pieceData.type,
+      rank: pieceData.rank,
+      file: pieceData.file,
+      moves: new Map<string, Set<TileData>>(),
+      params: new Map<string, boolean>(),
+    };
+    if (pieceData.type === "pawn") piece.params.set("movedTwo", false);
+    else if (pieceData.type === "king" || pieceData.type === "rook")
+      piece.params.set("hasMoved", false);
+
+    board.tiles[pieceData.rank * 8 + pieceData.file].piece = piece;
+    board.blackPieces.add(piece);
+  }
+
+  for (const piece of board.whitePieces)
+    calculateMoves(piece, board.tiles, [piece.rank, piece.file]);
+  for (const piece of board.blackPieces)
+    calculateMoves(piece, board.tiles, [piece.rank, piece.file]);
+  return board;
+}
+
 function getSrc(type: type, color: color): string {
   switch (type) {
     case "pawn":
@@ -789,8 +867,52 @@ function extractBoardState(tiles: TileData[]): TileState[] {
   });
 }
 
+function defaultStartPosition(): [
+  Set<{ type: type; rank: dimension; file: dimension }>,
+  Set<{ type: type; rank: dimension; file: dimension }>
+] {
+  return [
+    new Set<{ type: type; rank: dimension; file: dimension }>([
+      { type: "pawn", rank: 6, file: 0 },
+      { type: "pawn", rank: 6, file: 1 },
+      { type: "pawn", rank: 6, file: 2 },
+      { type: "pawn", rank: 6, file: 3 },
+      { type: "pawn", rank: 6, file: 4 },
+      { type: "pawn", rank: 6, file: 5 },
+      { type: "pawn", rank: 6, file: 6 },
+      { type: "pawn", rank: 6, file: 7 },
+      { type: "rook", rank: 7, file: 0 },
+      { type: "knight", rank: 7, file: 1 },
+      { type: "bishop", rank: 7, file: 2 },
+      { type: "queen", rank: 7, file: 3 },
+      { type: "king", rank: 7, file: 4 },
+      { type: "bishop", rank: 7, file: 5 },
+      { type: "knight", rank: 7, file: 6 },
+      { type: "rook", rank: 7, file: 7 },
+    ]),
+    new Set<{ type: type; rank: dimension; file: dimension }>([
+      { type: "rook", rank: 0, file: 0 },
+      { type: "knight", rank: 0, file: 1 },
+      { type: "bishop", rank: 0, file: 2 },
+      { type: "queen", rank: 0, file: 3 },
+      { type: "king", rank: 0, file: 4 },
+      { type: "bishop", rank: 0, file: 5 },
+      { type: "knight", rank: 0, file: 6 },
+      { type: "rook", rank: 0, file: 7 },
+      { type: "pawn", rank: 1, file: 0 },
+      { type: "pawn", rank: 1, file: 1 },
+      { type: "pawn", rank: 1, file: 2 },
+      { type: "pawn", rank: 1, file: 3 },
+      { type: "pawn", rank: 1, file: 4 },
+      { type: "pawn", rank: 1, file: 5 },
+      { type: "pawn", rank: 1, file: 6 },
+      { type: "pawn", rank: 1, file: 7 },
+    ]),
+  ];
+}
+
 function useChess() {
-  const boardData = useRef<BoardData>(setupInitialBoard());
+  const boardData = useRef<BoardData>(setup(defaultStartPosition()));
   const [board, setBoard] = useState<TileState[]>(
     extractBoardState(boardData.current.tiles)
   );

@@ -12,6 +12,9 @@ export function rookMoves(
   // Determine which axis rook moved along
   const [prevRank, prevFile] = prevPos;
 
+  if (!piece.moves.has("N-S")) piece.moves.set("N-S", new Set<TileData>());
+  if (!piece.moves.has("W-E")) piece.moves.set("W-E", new Set<TileData>());
+
   const moved = rank !== prevRank || file !== prevFile;
 
   if (prevFile !== piece.file || !moved) {

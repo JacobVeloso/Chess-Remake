@@ -12,6 +12,9 @@ export function bishopMoves(
   // Determine which axis bishop moved along
   const [prevRank, prevFile] = prevPos;
 
+  if (!piece.moves.has("NW-SE")) piece.moves.set("NW-SE", new Set<TileData>());
+  if (!piece.moves.has("NE-SW")) piece.moves.set("NE-SW", new Set<TileData>());
+
   const moved = rank !== prevRank || file !== prevFile;
 
   if (

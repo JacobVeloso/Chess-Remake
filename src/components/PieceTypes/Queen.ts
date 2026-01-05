@@ -33,9 +33,14 @@ export function queenMoves(
   board: TileData[],
   prevPos: [dimension, dimension]
 ): Set<TileData> {
-  // TODO: calculate all moves if prevPos = currPos
   const [rank, file] = [piece.rank, piece.file];
   const [prevRank, prevFile] = prevPos;
+
+  if (!piece.moves.has("N-S")) piece.moves.set("N-S", new Set<TileData>());
+  if (!piece.moves.has("W-E")) piece.moves.set("W-E", new Set<TileData>());
+  if (!piece.moves.has("NW-SE")) piece.moves.set("NW-SE", new Set<TileData>());
+  if (!piece.moves.has("NE-SW")) piece.moves.set("NE-SW", new Set<TileData>());
+
   const moveAxis =
     rank === prevRank && file !== prevFile
       ? piece.moves.get("W-E")
