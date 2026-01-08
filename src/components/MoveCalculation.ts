@@ -35,9 +35,9 @@ export function calculateMoves(
       throw new Error("unrecognised type");
   }
   // Add moves to board
-  moves.forEach((move) => {
-    board[move.rank * 8 + move.file].attackers.add(piece);
-  });
+  moves.forEach((move) =>
+    board[move.rank * 8 + move.file].attackers.add(piece)
+  );
   return moves;
 }
 
@@ -105,8 +105,8 @@ export function unblockMoves(
       throw new Error("unrecognised type");
   }
   // Add blocked moves to piece and board
-  unblockedMoves.forEach((move) => {
-    board[move.rank * 8 + move.file].attackers.add(piece);
-  });
+  unblockedMoves.forEach((move) =>
+    board[move.rank * 8 + move.file].attackers.add(piece)
+  );
   return unblockedMoves;
 }

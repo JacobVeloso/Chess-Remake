@@ -32,9 +32,7 @@ export function bishopMoves(
       moves.add(board[prevRank * 8 + prevFile]);
 
       // Remove all moves along NW-SE diagonal
-      piece.moves.get("NW-SE")?.forEach((move) => {
-        move.attackers.delete(piece);
-      });
+      piece.moves.get("NW-SE")?.forEach((move) => move.attackers.delete(piece));
       piece.moves.get("NW-SE")?.clear();
     }
 
@@ -76,9 +74,7 @@ export function bishopMoves(
       moves.add(board[prevRank * 8 + prevFile]);
 
       // Remove all moves along NE-SW diagonal
-      piece.moves.get("NE-SW")?.forEach((move) => {
-        move.attackers.delete(piece);
-      });
+      piece.moves.get("NE-SW")?.forEach((move) => move.attackers.delete(piece));
       piece.moves.get("NE-SW")?.clear();
     }
 

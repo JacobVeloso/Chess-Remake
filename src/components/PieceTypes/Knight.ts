@@ -5,9 +5,7 @@ export function knightMoves(
   board: TileData[]
 ): Set<TileData> {
   if (piece.moves.has("all")) {
-    piece.moves.get("all")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
+    piece.moves.get("all")?.forEach((move) => move.attackers.delete(piece));
     piece.moves.get("all")?.clear();
   } else piece.moves.set("all", new Set<TileData>());
 

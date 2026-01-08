@@ -3,30 +3,28 @@ import { calculateMoves } from "../MoveCalculation.ts";
 
 export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   if (piece.moves.has("forward")) {
-    piece.moves.get("forward")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
+    piece.moves.get("forward")?.forEach((move) => move.attackers.delete(piece));
     piece.moves.get("forward")?.clear();
   } else piece.moves.set("forward", new Set<TileData>());
 
   if (piece.moves.has("two square")) {
-    piece.moves.get("two square")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
+    piece.moves
+      .get("two square")
+      ?.forEach((move) => move.attackers.delete(piece));
     piece.moves.get("two square")?.clear();
   } else piece.moves.set("two square", new Set<TileData>());
 
   if (piece.moves.has("left capture")) {
-    piece.moves.get("left capture")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
+    piece.moves
+      .get("left capture")
+      ?.forEach((move) => move.attackers.delete(piece));
     piece.moves.get("left capture")?.clear();
   } else piece.moves.set("left capture", new Set<TileData>());
 
   if (piece.moves.has("right capture")) {
-    piece.moves.get("right capture")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
+    piece.moves
+      .get("right capture")
+      ?.forEach((move) => move.attackers.delete(piece));
     piece.moves.get("right capture")?.clear();
   } else piece.moves.set("right capture", new Set<TileData>());
 

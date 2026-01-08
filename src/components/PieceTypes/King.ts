@@ -5,23 +5,23 @@ import { rookMovesAfterCastle } from "./Rook.ts";
 
 export function kingMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   if (piece.moves.has("standard")) {
-    piece.moves.get("standard")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
+    piece.moves
+      .get("standard")
+      ?.forEach((move) => move.attackers.delete(piece));
     piece.moves.get("standard")?.clear();
   } else piece.moves.set("standard", new Set<TileData>());
 
   if (piece.moves.has("leftCastle")) {
-    piece.moves.get("leftCastle")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
+    piece.moves
+      .get("leftCastle")
+      ?.forEach((move) => move.attackers.delete(piece));
     piece.moves.get("leftCastle")?.clear();
   } else piece.moves.set("leftCastle", new Set<TileData>());
 
   if (piece.moves.has("rightCastle")) {
-    piece.moves.get("rightCastle")?.forEach((move) => {
-      move.attackers.delete(piece);
-    });
+    piece.moves
+      .get("rightCastle")
+      ?.forEach((move) => move.attackers.delete(piece));
     piece.moves.get("rightCastle")?.clear();
   } else piece.moves.set("rightCastle", new Set<TileData>());
 

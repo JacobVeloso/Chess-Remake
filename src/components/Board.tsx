@@ -1,12 +1,13 @@
 import "./Board.css";
 import Tile from "./Tile";
 import type { PieceState, PieceData, TileState, TileData } from "./types.ts";
-import useChess, { calculateLegalMoves, getHighlightedTiles } from "./Chess.ts";
+import useChess, { calculateLegalMoves } from "./Chess.ts";
 import {
   DndContext,
   type DragEndEvent,
   type DragStartEvent,
 } from "@dnd-kit/core";
+import { createContext } from "react";
 
 function getPieceState(
   board: TileState[],
@@ -28,18 +29,29 @@ function getPieceData(
   return null;
 }
 
+export const MoveContext = createContext<Map<string, Set<string>> | null>(
+  new Map<string, Set<string>>()
+);
+
 const Board = () => {
-  const { board, boardData, movePiece, actives, setActive, turn } = useChess();
+  const {
+    board,
+    boardData,
+    movePiece,
+    activePiece,
+    selectPiece,
+    actives,
+    turn,
+  } = useChess();
   let moves = calculateLegalMoves(boardData.current, turn.current);
 
   function handleDragStart(event: DragStartEvent) {
     const pieceId = event.active.id as PieceData["id"];
     const piece = getPieceState(board, pieceId);
-    if (piece) setActive(getHighlightedTiles(moves ?? new Map(), pieceId));
+    if (piece) selectPiece(piece, moves ?? new Map());
   }
 
   function handleDragEnd(event: DragEndEvent) {
-    setActive(new Array(64).fill(false));
     const { active, over } = event;
 
     // Check if piece is hovering over a tile
@@ -54,6 +66,7 @@ const Board = () => {
 
     // Check if tile is a legal move for the piece
     if (moves?.get(pieceId)?.has(targetTileId)) {
+      selectPiece(null, moves);
       const sourceTileId = board[piece.rank * 8 + piece.file].id;
       moves = movePiece(sourceTileId, targetTileId, moves);
 
@@ -61,19 +74,35 @@ const Board = () => {
     }
   }
 
+  function handleTileClick(tileID: TileData["id"]): undefined {
+    if (moves?.get(activePiece?.id ?? "")?.has(tileID)) {
+      selectPiece(null, moves);
+      const piece = getPieceData(boardData.current.tiles, activePiece!.id);
+      if (!piece) return;
+      const sourceTileId = board[piece.rank * 8 + piece.file].id;
+      moves = movePiece(sourceTileId, tileID, moves);
+
+      if (moves === null) return;
+    }
+  }
+
   return (
     <div className="container">
-      <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-        {board.map((tileState) => {
-          return (
-            <Tile
-              key={tileState.id}
-              tileState={tileState}
-              active={actives[tileState.rank * 8 + tileState.file]}
-            />
-          );
-        })}
-      </DndContext>
+      <MoveContext value={moves}>
+        <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+          {board.map((tileState) => {
+            return (
+              <Tile
+                key={tileState.id}
+                tileState={tileState}
+                active={actives.current[tileState.rank * 8 + tileState.file]}
+                selectPiece={selectPiece}
+                handleTileClick={handleTileClick}
+              />
+            );
+          })}
+        </DndContext>
+      </MoveContext>
     </div>
   );
 };

@@ -28,9 +28,7 @@ export function rookMoves(
       moves.add(board[prevRank * 8 + prevFile]);
 
       // Remove all vertical moves
-      piece.moves.get("N-S")?.forEach((move) => {
-        move.attackers.delete(piece);
-      });
+      piece.moves.get("N-S")?.forEach((move) => move.attackers.delete(piece));
       piece.moves.get("N-S")?.clear();
     }
 
@@ -68,9 +66,7 @@ export function rookMoves(
       moves.add(board[prevRank * 8 + prevFile]);
 
       // Delete all horizontal moves
-      piece.moves.get("W-E")?.forEach((move) => {
-        move.attackers.delete(piece);
-      });
+      piece.moves.get("W-E")?.forEach((move) => move.attackers.delete(piece));
       piece.moves.get("W-E")?.clear();
     }
 

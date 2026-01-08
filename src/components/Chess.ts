@@ -9,6 +9,7 @@ import type {
   color,
   type,
   dimension,
+  PieceState,
 } from "./types";
 import {
   checkBlocks,
@@ -237,7 +238,7 @@ export function calculateLegalMoves(
 
   const moves = new Map<PieceData["id"], Set<TileData["id"]>>();
 
-  pieces.forEach((piece) => {
+  for (const piece of pieces) {
     let pieceMoves = new Set<TileData>();
 
     for (const [_, moveType] of piece.moves) {
@@ -277,7 +278,7 @@ export function calculateLegalMoves(
       piece.id,
       new Set<TileData["id"]>(Array.from(pieceMoves, (move) => move.id))
     );
-  });
+  }
 
   // Check if there is at least one legal move
   for (const moveSet of moves.values()) {
@@ -293,10 +294,10 @@ export function calculateLegalMoves(
 
 function deletePiece(board: BoardData, piece: PieceData): void {
   // Remove piece and all of its attacks from board
-  board.tiles.forEach((tile) => {
+  for (const tile of board.tiles) {
     tile.attackers.delete(piece);
     if (tile.piece === piece) tile.piece = null;
-  });
+  }
 
   // Remove piece from board's piece collections
   if (piece.color === "white") board.whitePieces.delete(piece);
@@ -395,359 +396,6 @@ export function getHighlightedTiles(
   const tiles = Array(64).fill(false);
   moves.get(pieceID)?.forEach((move) => (tiles[+move] = true));
   return tiles;
-}
-
-function setupInitialBoard(): BoardData {
-  const WHITE_PIECES: Set<PieceData> = new Set();
-  const BLACK_PIECES: Set<PieceData> = new Set();
-  let pieceID = 0;
-  let tileID = 0;
-  // Initialise tiles array
-  const TILES: TileData[] = Array.from({ length: 64 }, (_, index) => {
-    const [rank, file]: [dimension, dimension] = [
-      Math.floor(index / 8) as dimension,
-      (index % 8) as dimension,
-    ];
-    const color: color = (rank + file) % 2 === 0 ? "white" : "black";
-
-    let type: type | null = null;
-    let pieceColor: color | null = null;
-
-    // black piece
-    if (rank === 1) {
-      pieceColor = "black";
-      type = "pawn";
-    } else if (rank === 0) {
-      pieceColor = "black";
-      if (file === 0 || file === 7) {
-        type = "rook";
-      } else if (file === 1 || file === 6) {
-        type = "knight";
-      } else if (file === 2 || file === 5) {
-        type = "bishop";
-      } else if (file === 3) {
-        type = "queen";
-      } else if (file === 4) {
-        type = "king";
-      }
-    }
-
-    // white piece
-    else if (rank === 6) {
-      pieceColor = "white";
-      type = "pawn";
-    } else if (rank === 7) {
-      pieceColor = "white";
-      if (file === 0 || file === 7) {
-        type = "rook";
-      } else if (file === 1 || file === 6) {
-        type = "knight";
-      } else if (file === 2 || file === 5) {
-        type = "bishop";
-      } else if (file === 3) {
-        type = "queen";
-      } else if (file === 4) {
-        type = "king";
-      }
-    }
-
-    let piece: PieceData | null = null;
-    if (type) {
-      const params = new Map<string, boolean>();
-      const moves = new Map<string, Set<TileData>>();
-      switch (type) {
-        case "pawn":
-          params.set("movedTwo", false);
-          piece = {
-            id: "" + pieceID++,
-            color: pieceColor!,
-            type,
-            rank,
-            file,
-            moves,
-            params,
-          };
-          break;
-        case "rook":
-          params.set("hasMoved", false);
-          piece = {
-            id: "" + pieceID++,
-            color: pieceColor!,
-            type,
-            rank,
-            file,
-            moves,
-            params,
-          };
-          break;
-        case "bishop":
-          piece = {
-            id: "" + pieceID++,
-            color: pieceColor!,
-            type,
-            rank,
-            file,
-            moves,
-            params,
-          };
-          break;
-        case "knight":
-          piece = {
-            id: "" + pieceID++,
-            color: pieceColor!,
-            type,
-            rank,
-            file,
-            moves,
-            params,
-          };
-          break;
-        case "king":
-          params.set("hasMoved", false);
-          piece = {
-            id: "" + pieceID++,
-            color: pieceColor!,
-            type,
-            rank,
-            file,
-            moves,
-            params,
-          };
-          break;
-        case "queen":
-          piece = {
-            id: "" + pieceID++,
-            color: pieceColor!,
-            type,
-            rank,
-            file,
-            moves,
-            params,
-          };
-          break;
-        default:
-          piece = null;
-      }
-      if (piece) {
-        if (piece.color === "white") WHITE_PIECES.add(piece);
-        else BLACK_PIECES.add(piece);
-      }
-    }
-
-    let tileData: TileData = {
-      id: "" + tileID++,
-      rank,
-      file,
-      color,
-      piece,
-      attackers: new Set<PieceData>(),
-    };
-    return tileData;
-  });
-
-  // Set black & white pawn moves
-  for (let j = 0; j < 8; ++j) {
-    const blackPawn = TILES[1 * 8 + j].piece!;
-    blackPawn.moves.set("forward", new Set<TileData>([TILES[2 * 8 + j]]));
-    TILES[2 * 8 + j].attackers.add(blackPawn);
-    blackPawn.moves.set("two square", new Set<TileData>([TILES[3 * 8 + j]]));
-    TILES[3 * 8 + j].attackers.add(blackPawn);
-    if (j !== 0) {
-      blackPawn.moves.set(
-        "left capture",
-        new Set<TileData>([TILES[2 * 8 + (j - 1)]])
-      );
-      TILES[2 * 8 + (j - 1)].attackers.add(blackPawn);
-    }
-    if (j !== 7) {
-      blackPawn.moves.set(
-        "right capture",
-        new Set<TileData>([TILES[2 * 8 + (j + 1)]])
-      );
-      TILES[2 * 8 + (j + 1)].attackers.add(blackPawn);
-    }
-
-    const whitePawn = TILES[6 * 8 + j].piece!;
-    whitePawn.moves.set("forward", new Set<TileData>([TILES[5 * 8 + j]]));
-    TILES[5 * 8 + j].attackers.add(whitePawn);
-    whitePawn.moves.set("two square", new Set<TileData>([TILES[4 * 8 + j]]));
-    TILES[4 * 8 + j].attackers.add(whitePawn);
-    if (j !== 0) {
-      whitePawn.moves.set(
-        "left capture",
-        new Set<TileData>([TILES[5 * 8 + (j - 1)]])
-      );
-      TILES[5 * 8 + (j - 1)].attackers.add(whitePawn);
-    }
-    if (j !== 7) {
-      whitePawn.moves.set(
-        "right capture",
-        new Set<TileData>([TILES[5 * 8 + (j + 1)]])
-      );
-      TILES[5 * 8 + (j + 1)].attackers.add(whitePawn);
-    }
-  }
-
-  // Set rook moves
-  const leftBlackRook = TILES[0 * 8 + 0].piece!;
-  leftBlackRook.moves.set("N-S", new Set<TileData>([TILES[1 * 8 + 0]]));
-  TILES[1 * 8 + 0].attackers.add(leftBlackRook);
-  leftBlackRook.moves.set("W-E", new Set<TileData>([TILES[0 * 8 + 1]]));
-  TILES[0 * 8 + 1].attackers.add(leftBlackRook);
-
-  const rightBlackRook = TILES[0 * 8 + 7].piece!;
-  rightBlackRook.moves.set("N-S", new Set<TileData>([TILES[1 * 8 + 7]]));
-  TILES[1 * 8 + 7].attackers.add(rightBlackRook);
-  rightBlackRook.moves.set("W-E", new Set<TileData>([TILES[0 * 8 + 6]]));
-  TILES[0 * 8 + 6].attackers.add(rightBlackRook);
-
-  const leftWhiteRook = TILES[7 * 8 + 0].piece!;
-  leftWhiteRook.moves.set("N-S", new Set<TileData>([TILES[6 * 8 + 0]]));
-  TILES[6 * 8 + 0].attackers.add(leftWhiteRook);
-  leftWhiteRook.moves.set("W-E", new Set<TileData>([TILES[7 * 8 + 1]]));
-  TILES[7 * 8 + 1].attackers.add(leftWhiteRook);
-
-  const rightWhiteRook = TILES[7 * 8 + 7].piece!;
-  rightWhiteRook.moves.set("N-S", new Set<TileData>([TILES[6 * 8 + 7]]));
-  TILES[6 * 8 + 7].attackers.add(rightWhiteRook);
-  rightWhiteRook.moves.set("W-E", new Set<TileData>([TILES[7 * 8 + 6]]));
-  TILES[7 * 8 + 6].attackers.add(rightWhiteRook);
-
-  // Set knight moves
-  const leftBlackKnight = TILES[0 * 8 + 1].piece!;
-  leftBlackKnight.moves.set(
-    "all",
-    new Set<TileData>([TILES[2 * 8 + 0], TILES[2 * 8 + 2], TILES[1 * 8 + 3]])
-  );
-  TILES[2 * 8 + 0].attackers.add(leftBlackKnight);
-  TILES[2 * 8 + 2].attackers.add(leftBlackKnight);
-  TILES[1 * 8 + 3].attackers.add(leftBlackKnight);
-
-  const rightBlackKnight = TILES[0 * 8 + 6].piece!;
-  rightBlackKnight.moves.set(
-    "all",
-    new Set<TileData>([TILES[2 * 8 + 5], TILES[2 * 8 + 7], TILES[1 * 8 + 4]])
-  );
-  TILES[2 * 8 + 5].attackers.add(rightBlackKnight);
-  TILES[2 * 8 + 7].attackers.add(rightBlackKnight);
-  TILES[1 * 8 + 4].attackers.add(rightBlackKnight);
-
-  const leftWhiteKnight = TILES[7 * 8 + 1].piece!;
-  leftWhiteKnight.moves.set(
-    "all",
-    new Set<TileData>([TILES[5 * 8 + 0], TILES[5 * 8 + 2], TILES[6 * 8 + 3]])
-  );
-  TILES[5 * 8 + 0].attackers.add(leftWhiteKnight);
-  TILES[5 * 8 + 2].attackers.add(leftWhiteKnight);
-  TILES[6 * 8 + 3].attackers.add(leftWhiteKnight);
-
-  const rightWhiteKnight = TILES[7 * 8 + 6].piece!;
-  rightWhiteKnight.moves.set(
-    "all",
-    new Set<TileData>([TILES[5 * 8 + 5], TILES[5 * 8 + 7], TILES[6 * 8 + 4]])
-  );
-  TILES[5 * 8 + 5].attackers.add(rightWhiteKnight);
-  TILES[5 * 8 + 7].attackers.add(rightWhiteKnight);
-  TILES[6 * 8 + 4].attackers.add(rightWhiteKnight);
-
-  // Set bishop moves
-  const leftBlackBishop = TILES[0 * 8 + 2].piece!;
-  leftBlackBishop.moves.set("NW-SE", new Set<TileData>([TILES[1 * 8 + 3]]));
-  TILES[1 * 8 + 3].attackers.add(leftBlackBishop);
-  leftBlackBishop.moves.set("NE-SW", new Set<TileData>([TILES[1 * 8 + 1]]));
-  TILES[1 * 8 + 1].attackers.add(leftBlackBishop);
-
-  const rightBlackBishop = TILES[0 * 8 + 5].piece!;
-  rightBlackBishop.moves.set("NW-SE", new Set<TileData>([TILES[1 * 8 + 6]]));
-  TILES[1 * 8 + 6].attackers.add(rightBlackBishop);
-  rightBlackBishop.moves.set("NE-SW", new Set<TileData>([TILES[1 * 8 + 4]]));
-  TILES[1 * 8 + 4].attackers.add(rightBlackBishop);
-
-  const leftWhiteBishop = TILES[7 * 8 + 2].piece!;
-  leftWhiteBishop.moves.set("NW-SE", new Set<TileData>([TILES[6 * 8 + 1]]));
-  TILES[6 * 8 + 1].attackers.add(leftWhiteBishop);
-  leftWhiteBishop.moves.set("NE-SW", new Set<TileData>([TILES[6 * 8 + 3]]));
-  TILES[6 * 8 + 3].attackers.add(leftWhiteBishop);
-
-  const rightWhiteBishop = TILES[7 * 8 + 5].piece!;
-  rightWhiteBishop.moves.set("NW-SE", new Set<TileData>([TILES[6 * 8 + 4]]));
-  TILES[6 * 8 + 4].attackers.add(rightWhiteBishop);
-  rightWhiteBishop.moves.set("NE-SW", new Set<TileData>([TILES[6 * 8 + 6]]));
-  TILES[6 * 8 + 6].attackers.add(rightWhiteBishop);
-
-  // Set queen moves
-  const blackQueen = TILES[0 * 8 + 3].piece!;
-  blackQueen.moves.set(
-    "W-E",
-    new Set<TileData>([TILES[0 * 8 + 2], TILES[0 * 8 + 4]])
-  );
-  TILES[0 * 8 + 2].attackers.add(blackQueen);
-  TILES[0 * 8 + 4].attackers.add(blackQueen);
-  blackQueen.moves.set("NW-SE", new Set<TileData>([TILES[1 * 8 + 4]]));
-  TILES[1 * 8 + 4].attackers.add(blackQueen);
-  blackQueen.moves.set("N-S", new Set<TileData>([TILES[1 * 8 + 3]]));
-  TILES[1 * 8 + 3].attackers.add(blackQueen);
-  blackQueen.moves.set("NE-SW", new Set<TileData>([TILES[1 * 8 + 2]]));
-  TILES[1 * 8 + 2].attackers.add(blackQueen);
-
-  const whiteQueen = TILES[7 * 8 + 3].piece!;
-  whiteQueen.moves.set(
-    "W-E",
-    new Set<TileData>([TILES[7 * 8 + 2], TILES[7 * 8 + 4]])
-  );
-  TILES[7 * 8 + 2].attackers.add(whiteQueen);
-  TILES[7 * 8 + 4].attackers.add(whiteQueen);
-  whiteQueen.moves.set("NW-SE", new Set<TileData>([TILES[6 * 8 + 2]]));
-  TILES[6 * 8 + 2].attackers.add(whiteQueen);
-  whiteQueen.moves.set("N-S", new Set<TileData>([TILES[6 * 8 + 3]]));
-  TILES[6 * 8 + 3].attackers.add(whiteQueen);
-  whiteQueen.moves.set("NE-SW", new Set<TileData>([TILES[6 * 8 + 4]]));
-  TILES[6 * 8 + 4].attackers.add(whiteQueen);
-
-  // Set king moves
-  const blackKing = TILES[0 * 8 + 4].piece!;
-  blackKing.moves.set(
-    "standard",
-    new Set<TileData>([
-      TILES[0 * 8 + 3],
-      TILES[1 * 8 + 3],
-      TILES[1 * 8 + 4],
-      TILES[1 * 8 + 5],
-      TILES[0 * 8 + 5],
-    ])
-  );
-  TILES[0 * 8 + 3].attackers.add(blackKing);
-  TILES[1 * 8 + 3].attackers.add(blackKing);
-  TILES[1 * 8 + 4].attackers.add(blackKing);
-  TILES[1 * 8 + 5].attackers.add(blackKing);
-  TILES[0 * 8 + 5].attackers.add(blackKing);
-  blackKing.moves.set("leftCastle", new Set<TileData>([TILES[0 * 8 + 2]]));
-  blackKing.moves.set("rightCastle", new Set<TileData>([TILES[0 * 8 + 6]]));
-
-  const whiteKing = TILES[7 * 8 + 4].piece!;
-  whiteKing.moves.set(
-    "W",
-    new Set<TileData>([
-      TILES[7 * 8 + 3],
-      TILES[6 * 8 + 3],
-      TILES[6 * 8 + 4],
-      TILES[6 * 8 + 5],
-      TILES[7 * 8 + 5],
-    ])
-  );
-  TILES[7 * 8 + 3].attackers.add(whiteKing);
-  TILES[6 * 8 + 3].attackers.add(whiteKing);
-  TILES[6 * 8 + 4].attackers.add(whiteKing);
-  TILES[6 * 8 + 5].attackers.add(whiteKing);
-  TILES[7 * 8 + 5].attackers.add(whiteKing);
-  whiteKing.moves.set("leftCastle", new Set<TileData>([TILES[7 * 8 + 2]]));
-  whiteKing.moves.set("rightCastle", new Set<TileData>([TILES[7 * 8 + 6]]));
-
-  return {
-    tiles: TILES,
-    whitePieces: WHITE_PIECES,
-    blackPieces: BLACK_PIECES,
-  };
 }
 
 function createBoard(): TileData[] {
@@ -916,7 +564,8 @@ function useChess() {
   const [board, setBoard] = useState<TileState[]>(
     extractBoardState(boardData.current.tiles)
   );
-  const [actives, setActive] = useState<boolean[]>(new Array(64).fill(false));
+  const [activePiece, setPiece] = useState<PieceState | null>(null);
+  const actives = useRef<boolean[]>(new Array(64).fill(false));
   const turn = useRef<color>("white");
   const whitePawn = useRef<PieceData | null>(null);
   const blackPawn = useRef<PieceData | null>(null);
@@ -961,7 +610,30 @@ function useChess() {
     }
     return new Map<string, Set<string>>();
   };
-  return { board, boardData, movePiece, actives, setActive, turn };
+
+  const selectPiece = (
+    piece: PieceState | null,
+    moves: Map<PieceData["id"], Set<TileData["id"]>>
+  ): undefined => {
+    const tiles = Array(64).fill(false);
+
+    if (piece) moves.get(piece.id)?.forEach((move) => (tiles[+move] = true));
+
+    actives.current = tiles;
+    setPiece(piece);
+
+    return undefined;
+  };
+
+  return {
+    board,
+    boardData,
+    movePiece,
+    activePiece,
+    selectPiece,
+    actives,
+    turn,
+  };
 }
 
 export default useChess;
