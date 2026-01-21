@@ -1,0 +1,26 @@
+.tile {
+    width: 100px;
+    height: 100px;
+}
+
+.tile.attacked {
+    opacity: 0.5;
+    border: 2px;
+    border-color: red;
+}
+
+.square-w {
+    background-color: white;  
+}
+
+.square-b {
+    background-color: rgb(119, 99, 7);
+}
+
+.tile.over {
+    background-color: #d1d3d8;
+}
+
+.legal {
+    opacity: 0.8;
+}

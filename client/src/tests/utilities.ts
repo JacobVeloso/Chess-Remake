@@ -1,0 +1,148 @@
+import pieces from "../assets/index";
+
+import type {
+  PieceData,
+  TileData,
+  type,
+  color,
+  dimension,
+} from "../components/types.ts";
+import { pawnMoves, pawnBlock } from "../components/PieceTypes/Pawn.ts";
+import { rookMoves, rookBlock } from "../components/PieceTypes/Rook.ts";
+import { knightMoves, knightBlock } from "../components/PieceTypes/Knight.ts";
+import { bishopMoves, bishopBlock } from "../components/PieceTypes/Bishop.ts";
+import { queenMoves, queenBlock } from "../components/PieceTypes/Queen.ts";
+import { kingMoves, kingBlock } from "../components/PieceTypes/King.ts";
+
+export const BOARD: TileData[] = new Array(64);
+for (let i = 0; i < 64; ++i) {
+  const rank = Math.floor(i / 8) as dimension;
+  const file = (i % 8) as dimension;
+  const color = (rank + file) % 2 === 0 ? "white" : "black";
+  BOARD[i] = {
+    id: "" + i,
+    rank,
+    file,
+    color,
+    piece: null,
+    attackers: new Set(),
+  };
+}
+export var ID = 0;
+
+export function makePiece(
+  type: type,
+  color: color,
+  rank: dimension,
+  file: dimension
+): PieceData {
+  const params = new Map();
+  switch (type) {
+    case "pawn":
+      params.set("movedTwo", false);
+      return {
+        id: "" + ID++,
+        color,
+        type: "pawn",
+        src: color === "white" ? pieces.whitePawn : pieces.blackPawn,
+        rank,
+        file,
+        moves: new Set(),
+        calcMoves: pawnMoves,
+        block: pawnBlock,
+        params,
+      };
+    case "rook":
+      params.set("hasMoved", false);
+      return {
+        id: "" + ID++,
+        color: color,
+        type: "rook",
+        src: color === "white" ? pieces.whiteRook : pieces.blackRook,
+        rank: rank,
+        file: file,
+        moves: new Set(),
+        calcMoves: rookMoves,
+        block: rookBlock,
+        params,
+      };
+    case "knight":
+      return {
+        id: "" + ID++,
+        color: color,
+        type: "knight",
+        src: color === "white" ? pieces.whiteKnight : pieces.blackKnight,
+        rank: rank,
+        file: file,
+        moves: new Set(),
+        calcMoves: knightMoves,
+        block: knightBlock,
+        params,
+      };
+    case "bishop":
+      return {
+        id: "" + ID++,
+        color: color,
+        type: "bishop",
+        src: color === "white" ? pieces.whiteBishop : pieces.blackBishop,
+        rank: rank,
+        file: file,
+        moves: new Set(),
+        calcMoves: bishopMoves,
+        block: bishopBlock,
+        params,
+      };
+    case "king":
+      params.set("hasMoved", false);
+      return {
+        id: "" + ID++,
+        color: color,
+        type: "king",
+        src: color === "white" ? pieces.whiteKing : pieces.blackKing,
+        rank: rank,
+        file: file,
+        moves: new Set(),
+        calcMoves: kingMoves,
+        block: kingBlock,
+        params,
+      };
+    default: // queen
+      return {
+        id: "" + ID++,
+        color: color,
+        type: "queen",
+        src: color === "white" ? pieces.whiteQueen : pieces.blackQueen,
+        rank: rank,
+        file: file,
+        moves: new Set(),
+        calcMoves: queenMoves,
+        block: queenBlock,
+        params,
+      };
+  }
+}
+
+export function placePiece(
+  type: type,
+  color: color,
+  rank: dimension,
+  file: dimension
+): boolean {
+  const piece = makePiece(type, color, rank, file);
+  const tile = board(rank, file);
+  if (tile.piece) return false;
+  tile.piece = piece;
+  return true;
+}
+
+export function board(rank: dimension, file: dimension): TileData {
+  return BOARD[rank * 8 + file];
+}
+
+export function setsEqual<T>(A: Set<T>, B: Set<T>): boolean {
+  if (A.size !== B.size) return false;
+  for (const val of A) {
+    if (!B.has(val)) return false;
+  }
+  return true;
+}
