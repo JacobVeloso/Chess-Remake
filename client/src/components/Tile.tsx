@@ -53,6 +53,7 @@ export function decodeMove(move: string): [string, string] {
 interface Props {
   tileState: TileState;
   active: boolean;
+  last: boolean;
   selectPiece: (
     piece: PieceState | null,
     moves: Map<PieceData["id"], Set<TileData["id"]>>,
@@ -61,7 +62,7 @@ interface Props {
 }
 
 const Tile = memo(
-  ({ tileState, active, selectPiece, handleTileClick }: Props) => {
+  ({ tileState, active, last, selectPiece, handleTileClick }: Props) => {
     const { setNodeRef } = useDroppable({
       id: tileState.id,
     });
@@ -70,7 +71,11 @@ const Tile = memo(
       <div
         ref={setNodeRef}
         className={
-          "square-" + tileState.color[0] + " tile" + (active ? " attacked" : "")
+          "square-" +
+          tileState.color[0] +
+          " tile" +
+          (active ? " attacked" : "") +
+          (last ? " last" : "")
         }
         id={FILES[tileState.file] + tileState.rank}
         onClick={() => handleTileClick(tileState.id)}

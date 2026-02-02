@@ -88,6 +88,7 @@ const Board = () => {
   );
   const [activePiece, setPiece] = useState<PieceState | null>(null);
   const actives = useRef<boolean[]>(new Array(64).fill(false));
+  const lastTile = useRef<TileData["id"]>("");
 
   let moves = calculateLegalMoves(boardData.current);
 
@@ -120,6 +121,7 @@ const Board = () => {
       // console.log(source, target);
 
       moves = movePiece(source, target, moves ?? new Map());
+      lastTile.current = source;
       setBoard(extractBoardState(boardData.current.tiles));
 
       if (moves === null) {
@@ -168,6 +170,7 @@ const Board = () => {
       if (!piece) return;
       const sourceTileId = board[piece.rank * 8 + piece.file].id;
       moves = movePiece(sourceTileId, targetTileId, moves);
+      lastTile.current = sourceTileId;
       // Update board state and trigger re-render
       setBoard(extractBoardState(boardData.current.tiles));
 
@@ -187,6 +190,7 @@ const Board = () => {
       if (!piece) return;
       const sourceTileId = board[piece.rank * 8 + piece.file].id;
       moves = movePiece(sourceTileId, tileID, moves);
+      lastTile.current = sourceTileId;
       // Update board state and trigger re-render
       setBoard(extractBoardState(boardData.current.tiles));
 
@@ -209,6 +213,7 @@ const Board = () => {
                 key={tileState.id}
                 tileState={tileState}
                 active={actives.current[tileState.rank * 8 + tileState.file]}
+                last={lastTile.current === tileState.id}
                 selectPiece={selectPiece}
                 handleTileClick={handleTileClick}
               />

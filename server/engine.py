@@ -61,14 +61,14 @@ def main():
     dataset = ChessDataset("data/processed")
     loader = DataLoader(
         dataset,
-        batch_size=256,
+        batch_size=1024,
         shuffle=True
         # num_workers=4,
         # multiprocessing_context='fork' if torch.backends.mps.is_available() else None
     )
 
     # Training loop
-    EPOCHS = 10
+    EPOCHS = 5
     for epoch in range(EPOCHS):
         model.train()
         running_loss = 0.0

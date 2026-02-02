@@ -9,6 +9,11 @@
     border-color: red;
 }
 
+.tile.last {
+    opacity: 0.5;
+    background-color: #d1d3d8;
+}
+
 .square-w {
     background-color: white;  
 }
@@ -17,10 +22,10 @@
     background-color: rgb(119, 99, 7);
 }
 
-.tile.over {
+/* .tile.over {
     background-color: #d1d3d8;
 }
 
 .legal {
     opacity: 0.8;
-}
+} */
