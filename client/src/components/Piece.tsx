@@ -11,7 +11,7 @@ interface Props {
   src: string;
   selectPiece: (
     piece: PieceState | null,
-    moves: Map<PieceData["id"], Set<TileData["id"]>>
+    moves: Map<PieceData["id"], Set<TileData["id"]>>,
   ) => undefined;
 }
 

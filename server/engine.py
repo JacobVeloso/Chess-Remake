@@ -2,12 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
-import chess
-import chess.pgn
-import multiprocessing
-
 from torch import optim
-from dataset import ChessDataset
+import re
+import multiprocessing
+import os
+
+from dataset import ChessDataset, encode_move_tensor
 
 class ChessEngine(nn.Module):
     def __init__(self):
@@ -27,20 +27,30 @@ class ChessEngine(nn.Module):
         return self.head(x)
 
 def main():
-    # Load chess game data
-    game = chess.pgn.read_game(open("games/0.pgn"))
-    board = game.board()
+    # # Load chess game data
+    # game = chess.pgn.read_game(open("games/0.pgn"))
+    # board = game.board()
 
-    training_positions = []
-
-    for move in game.mainline_moves():
-        fen_before = board.fen()
-        move_uci = move.uci()
-        board.push(move)
-        training_positions.append([fen_before, move_uci])
+    # for move in game.mainline_moves():
+    #     fen_before = board.fen()
+    #     move_uci = move.uci()
+    #     board.push(move)
+    #     training_positions.append([fen_before, move_uci])
 
     # Device
-    device = torch.device("mps")
+    device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
+    # training_positions = []
+    # with os.scandir("data/processed") as pts:
+    #     for f in pts:
+    #         if not f.is_file() or not re.fullmatch(".*\.pt$", f.path):
+    #             continue
+    #         print(f.path)
+    #         tensors: dict[str, torch.Tensor] = torch.load(f.path, map_location=device)
+    #         print("Loaded tensors!")
+    #         for datapoint in tensors.values():
+    #             board, move_tensor = datapoint.split(13)
+    #             move = encode_move_tensor(move_tensor)
+    #             training_positions.append((board, move))
 
     # Training objects
     model = ChessEngine().to(device)
@@ -48,13 +58,13 @@ def main():
     optimizer = optim.Adam(model.parameters(), lr=1e-3)
 
     # Setup data loading for model
-    BATCH_SIZE = 256
-    dataset = ChessDataset(training_positions)
+    dataset = ChessDataset("data/processed")
     loader = DataLoader(
         dataset,
-        batch_size=BATCH_SIZE,
-        shuffle=True,
-        num_workers=4
+        batch_size=256,
+        shuffle=True
+        # num_workers=4,
+        # multiprocessing_context='fork' if torch.backends.mps.is_available() else None
     )
 
     # Training loop
@@ -86,4 +96,5 @@ def main():
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
+    # multiprocessing.set_start_method('fork', force=True) 
     main()

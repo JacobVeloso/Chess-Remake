@@ -4,7 +4,7 @@ from engine import ChessEngine
 from dataset import encode_move, decode_move, encode_board
 
 def main():
-    device = torch.device("mps")
+    device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
     model = ChessEngine().to(device)
 
     model.load_state_dict(torch.load("model.pt"))

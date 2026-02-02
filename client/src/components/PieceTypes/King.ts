@@ -51,7 +51,7 @@ export function kingMoves(piece: PieceData, board: TileData[]): Set<TileData> {
 export function checkBlocks(
   board: TileData[],
   rank: dimension,
-  file: dimension
+  file: dimension,
 ): Set<TileData> | null {
   const tile = board[rank * 8 + file];
   if (
@@ -65,7 +65,7 @@ export function checkBlocks(
 
   // Check if king is attacked by multiple pieces
   const attackers = Array.from(tile.attackers).filter(
-    (attacker: PieceData) => attacker.color !== king.color
+    (attacker: PieceData) => attacker.color !== king.color,
   );
   if (attackers.length > 1)
     return king.moves.get("standard") ?? new Set<TileData>();
@@ -74,14 +74,14 @@ export function checkBlocks(
   return blockingMoves(
     board,
     [king.rank, king.file],
-    [attackers[0].rank, attackers[0].file]
+    [attackers[0].rank, attackers[0].file],
   );
 }
 
 export function filterAttackedTiles(
   board: TileData[],
   king: PieceData,
-  moves: Set<TileData>
+  moves: Set<TileData>,
 ): Set<TileData> {
   const [rank, file] = [king.rank, king.file];
   const color = king.color;
@@ -118,7 +118,7 @@ export function filterAttackedTiles(
 
 export function checkCastlingMoves(
   board: TileData[],
-  king: PieceData
+  king: PieceData,
 ): Set<TileData> {
   if (king.type !== "king") return new Set<TileData>();
 
@@ -131,7 +131,7 @@ export function checkCastlingMoves(
     const leftCastle = king.moves.get("leftCastle")!.values().next().value!;
     const leftRook = board[king.rank * 8].piece;
     if (
-      (leftRook && leftRook.params.get("hasMoved")) ||
+      (leftCastle && leftRook && leftRook.params.get("hasMoved")) ||
       board[rank * 8 + 3].piece ||
       isAttacked(board[rank * 8 + 3], king.color) ||
       board[rank * 8 + 2].piece ||
@@ -147,7 +147,7 @@ export function checkCastlingMoves(
     const rightCastle = king.moves.get("rightCastle")!.values().next().value!;
     const rightRook = board[king.rank * 8 + 7].piece;
     if (
-      (rightRook && rightRook.params.get("hasMoved")) ||
+      (rightCastle && rightRook && rightRook.params.get("hasMoved")) ||
       board[rank * 8 + 5].piece ||
       isAttacked(board[rank * 8 + 5], king.color) ||
       board[rank * 8 + 6].piece ||
@@ -158,10 +158,54 @@ export function checkCastlingMoves(
   return deletions;
 }
 
+export function getCastlingMoves(
+  board: TileData[],
+  king: PieceData,
+  onlyLegal: boolean = true,
+): Set<TileData> {
+  if (king.type !== "king") return new Set();
+
+  const moves = new Set<TileData>();
+  const rank = king.rank;
+
+  // Check left castle
+  const leftCastle = king.moves.get("leftCastle")!.values().next().value!;
+  const leftRook = board[king.rank * 8].piece;
+  if (leftCastle && leftRook && !leftRook.params.get("hasMoved")) {
+    if (
+      !onlyLegal ||
+      (!board[rank * 8 + 3].piece &&
+        !isAttacked(board[rank * 8 + 3], king.color) &&
+        !board[rank * 8 + 2].piece &&
+        !isAttacked(board[rank * 8 + 2], king.color) &&
+        !board[rank * 8 + 1].piece &&
+        !isAttacked(board[rank * 8 + 1], king.color))
+    )
+      moves.add(leftCastle);
+  }
+
+  // Check right castle
+  const rightCastle = king.moves.get("rightCastle")!.values().next().value!;
+  const rightRook = board[king.rank * 8 + 7].piece;
+  if (rightCastle && rightRook && !rightRook.params.get("hasMoved")) {
+    if (
+      !onlyLegal ||
+      (!board[rank * 8 + 5].piece &&
+        !isAttacked(board[rank * 8 + 5], king.color) &&
+        !board[rank * 8 + 6].piece &&
+        !isAttacked(board[rank * 8 + 6], king.color))
+    )
+      moves.add(rightCastle);
+  }
+  // console.log(king.color, leftCastle, leftRook, rightCastle, rightRook);
+
+  return moves;
+}
+
 export function removeCastlingMove(
   board: TileData[],
   king: PieceData,
-  direction: "left" | "right"
+  direction: "left" | "right",
 ): void {
   if (king.type !== "king") return;
 
@@ -206,6 +250,6 @@ export function castle(board: TileData[], move: Move): void {
   // Recalculate moves
   kingMoves(king, board).forEach((move) => board[+move.id].attackers.add(king));
   rookMovesAfterCastle(rook, board).forEach((move) =>
-    board[+move.id].attackers.add(rook)
+    board[+move.id].attackers.add(rook),
   );
 }

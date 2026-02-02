@@ -1,19 +1,68 @@
+import os
 import torch
 from torch.utils.data import Dataset
 
 class ChessDataset(Dataset):
-    def __init__(self, positions):
-        self.positions = positions
+    def __init__(self, data_dir: str):
+        # self.positions = positions
+        self.data_dir = data_dir
+
+        # Discover chunk files
+        self.files = sorted(
+            f for f in os.listdir(data_dir)
+            if f.endswith(".pt")
+        )
+
+        if not self.files:
+            raise RuntimeError("No data files found")
+
+        # Index mapping: global_idx → (file_idx, local_idx)
+        self.index = []
+
+        self.length = 0
+        self.file_sizes = []
+
+        for file_idx, fname in enumerate(self.files):
+            path = os.path.join(data_dir, fname)
+            meta = torch.load(path, map_location="cpu")
+
+            n = meta["boards"].shape[0]
+            self.file_sizes.append(n)
+
+            for local_idx in range(n):
+                self.index.append((file_idx, local_idx))
+
+            self.length += n
+
+        # Do NOT keep file contents in memory
+        self._cache = {}
+        self._cache_size = 2  # number of chunks cached
 
     def __len__(self):
-        return len(self.positions)
+        return self.length
+    
+    def _load_file(self, file_idx):
+        if file_idx in self._cache:
+            return self._cache[file_idx]
+
+        path = os.path.join(self.data_dir, self.files[file_idx])
+        data = torch.load(path, map_location="cpu")
+
+        # Simple LRU cache
+        if len(self._cache) >= self._cache_size:
+            self._cache.pop(next(iter(self._cache)))
+
+        self._cache[file_idx] = data
+        return data
 
     def __getitem__(self, idx):
-        board, move = self.positions[idx]
-        board_tensor = encode_board(board)
-        move_index = encode_move(move)
+        file_idx, local_idx = self.index[idx]
+        data = self._load_file(file_idx)
 
-        return board_tensor, move_index
+        board = data["boards"][local_idx]
+        move = data["moves"][local_idx]
+
+        return board, move
     
 def encode_move(uci: str) -> int | None:
     if not 4 <= len(uci) <= 5:
@@ -126,8 +175,8 @@ def decode_move(move_idx: int) -> str | None:
 
     # Sliding move
     if move_type < 56:
-        direction = move_type // 8
-        dist = move_type % 8
+        direction = move_type // 7
+        dist = move_type % 7
 
         match direction:
             case 0:
@@ -219,7 +268,7 @@ def encode_board(fen: str) -> torch.Tensor | None:
     placements, active, castling_availability, ep_target, *_ = fen.split()
 
     if not placements or not active or not castling_availability or not ep_target:
-        return
+        raise ValueError(f"Incorrect format: {fen}")
 
     # Encode piece placements
     PIECE_REPS = "PRNBQKprnbqk"
@@ -231,10 +280,7 @@ def encode_board(fen: str) -> torch.Tensor | None:
             if char.isdigit() and 1 <= int(char) <= 8:
                 file += int(char)
             else:
-                try:
-                    piece_index = PIECE_REPS.index(char)
-                except ValueError:
-                    return    
+                piece_index = PIECE_REPS.index(char)  
                 board[piece_index][rank][file] = 1
                 file += 1
         rank -= 1
@@ -243,7 +289,7 @@ def encode_board(fen: str) -> torch.Tensor | None:
     if active == 'b':
         board[12][0][0] = 1
     elif active != 'w': # active can only be 'w' or 'b'
-        return
+        raise ValueError(f"Invalid color: {active}")
     
     # Encode castling availability
     if castling_availability != '-':
@@ -258,13 +304,28 @@ def encode_board(fen: str) -> torch.Tensor | None:
                 case 'q':
                     board[12][0][4] = 1
                 case _:
-                    return
+                    raise ValueError(f"Invalid castle: {castling_availability}")
             
     # Encode en passant target
     if ep_target != '-':
         if len(ep_target) != 2 or not 97 <= ord(ep_target[0]) <= 104 or not ep_target[1].isdigit() or (int(ep_target[1]) != 3 and int(ep_target[1]) != 6):
-            return
+            raise ValueError(f"Invalid en passant target: {ep_target}")
         file, rank = ep_target[0], ep_target[1]
         board[12][int(rank)][ord(file) - ord('a')] = 1
 
     return board
+
+def encode_move_tensor(move: torch.Tensor) -> int | None:
+    source_alg = ""
+    target_alg = ""
+    FILES = "abcdefgh"
+    for i in range(len(move[0])):
+        for j in range(len(move[0][i])):
+            if move[0][i][j] == 1:
+                source_alg += FILES[j] + str(i+1)
+            elif move[0][i][j] == 2:
+                target_alg += FILES[j] + str(i+1)
+    if source_alg == "" or target_alg == "":
+        return
+    
+    return encode_move(source_alg + target_alg)

@@ -8,7 +8,8 @@ import type {
   type,
   color,
 } from "./types.ts";
-import useChess, { calculateLegalMoves } from "./Chess.ts";
+import { encodeMove, decodeMove } from "./Tile.tsx";
+import useChess, { calculateLegalMoves, generateFEN } from "./Chess.ts";
 import pieces from "../assets/index";
 import {
   DndContext,
@@ -19,7 +20,7 @@ import { createContext, useRef, useState } from "react";
 
 function getPieceState(
   board: TileState[],
-  id: PieceData["id"]
+  id: PieceData["id"],
 ): PieceState | null {
   for (const tile of board) {
     if (tile.piece?.id === id) return tile.piece;
@@ -29,7 +30,7 @@ function getPieceState(
 
 function getPieceData(
   board: TileData[],
-  id: PieceData["id"]
+  id: PieceData["id"],
 ): PieceData | null {
   for (const tile of board) {
     if (tile.piece?.id === id) return tile.piece;
@@ -77,22 +78,62 @@ function extractBoardState(tiles: TileData[]): TileState[] {
 }
 
 export const MoveContext = createContext<Map<string, Set<string>> | null>(
-  new Map<string, Set<string>>()
+  new Map<string, Set<string>>(),
 );
 
 const Board = () => {
-  const { boardData, movePiece, turn } = useChess();
+  const { boardData, movePiece } = useChess();
   const [board, setBoard] = useState<TileState[]>(
-    extractBoardState(boardData.current.tiles)
+    extractBoardState(boardData.current.tiles),
   );
   const [activePiece, setPiece] = useState<PieceState | null>(null);
   const actives = useRef<boolean[]>(new Array(64).fill(false));
 
-  let moves = calculateLegalMoves(boardData.current, turn.current);
+  let moves = calculateLegalMoves(boardData.current);
+
+  const engineMove = async () => {
+    try {
+      const legalMoves = new Set<string>();
+      for (const [pieceId, moveSet] of moves ?? new Map()) {
+        const piece = getPieceData(boardData.current.tiles, pieceId);
+        if (!piece) continue;
+        const source = boardData.current.tiles[piece.rank * 8 + piece.file];
+        for (const move of moveSet) {
+          const target = boardData.current.tiles[+move];
+          legalMoves.add(encodeMove(source, target));
+        }
+      }
+      // console.log([...legalMoves]);
+      const res = await fetch("http://127.0.0.1:5000/api/process", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          fen: generateFEN(boardData.current),
+          moves: [...legalMoves],
+        }),
+      });
+
+      const returnVal = await res.json();
+      const [source, target] = decodeMove(returnVal.move);
+      // console.log(source, target);
+
+      moves = movePiece(source, target, moves ?? new Map());
+      setBoard(extractBoardState(boardData.current.tiles));
+
+      if (moves === null) {
+        console.log("GAME OVER");
+        return;
+      } // End of game
+    } catch (err) {
+      console.error("Error: ", err);
+    }
+  };
 
   function selectPiece(
     piece: PieceState | null,
-    moves: Map<PieceData["id"], Set<TileData["id"]>>
+    moves: Map<PieceData["id"], Set<TileData["id"]>>,
   ): undefined {
     actives.current.forEach((_, i) => (actives.current[i] = false));
 
@@ -130,7 +171,12 @@ const Board = () => {
       // Update board state and trigger re-render
       setBoard(extractBoardState(boardData.current.tiles));
 
-      if (moves === null) return; // End of game
+      if (moves === null) {
+        console.log("GAME OVER");
+        return; // End of game
+      }
+
+      engineMove();
     }
   }
 
@@ -144,7 +190,12 @@ const Board = () => {
       // Update board state and trigger re-render
       setBoard(extractBoardState(boardData.current.tiles));
 
-      if (moves === null) return;
+      if (moves === null) {
+        console.log("GAME OVER");
+        return;
+      }
+
+      engineMove();
     }
   }
 

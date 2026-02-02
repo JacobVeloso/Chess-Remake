@@ -36,6 +36,10 @@ export type BoardData = {
   tiles: TileData[];
   whitePieces: Set<PieceData>;
   blackPieces: Set<PieceData>;
+  turn: color;
+  halfmoves: number;
+  fullmoves: number;
+  epPawn: PieceData | null;
 };
 
 export type Move = {

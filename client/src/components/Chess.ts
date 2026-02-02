@@ -8,6 +8,7 @@ import type {
   type,
   dimension,
 } from "./types";
+import { encodeTile } from "./Tile.tsx";
 import {
   checkBlocks,
   filterAttackedTiles,
@@ -16,7 +17,7 @@ import {
 } from "./PieceTypes/King";
 import { checkPawnMoves, promote } from "./PieceTypes/Pawn";
 import { calculateMoves, blockMoves, unblockMoves } from "./MoveCalculation";
-import { castle } from "./PieceTypes/King";
+import { castle, getCastlingMoves } from "./PieceTypes/King";
 import { isAttacked } from "./Tile";
 
 /**
@@ -29,7 +30,7 @@ import { isAttacked } from "./Tile";
 export function getPinBlocks(
   board: TileData[],
   kingPos: [dimension, dimension],
-  piecePos: [dimension, dimension]
+  piecePos: [dimension, dimension],
 ): Set<TileData> | null {
   // Check that a king is at kingPos
   const [kingRank, kingFile] = kingPos;
@@ -166,7 +167,7 @@ export function getPinBlocks(
  */
 export function filterMoves(
   allMoves: Set<TileData>,
-  allowedMoves: Set<TileData>
+  allowedMoves: Set<TileData>,
 ): Set<TileData> {
   const filteredMoves = new Set<TileData>();
   for (const move of allMoves) {
@@ -185,7 +186,7 @@ export function filterMoves(
 export function blockingMoves(
   board: TileData[],
   kingPos: [dimension, dimension],
-  attackerPos: [dimension, dimension]
+  attackerPos: [dimension, dimension],
 ): Set<TileData> {
   const [kingRank, kingFile] = kingPos;
   const [attackerRank, attackerFile] = attackerPos;
@@ -226,9 +227,8 @@ export function blockingMoves(
 
 export function calculateLegalMoves(
   board: BoardData,
-  turn: color
 ): Map<PieceData["id"], Set<TileData["id"]>> | null {
-  const pieces = turn === "white" ? board.whitePieces : board.blackPieces;
+  const pieces = board.turn === "white" ? board.whitePieces : board.blackPieces;
   const king = Array.from(pieces).filter((piece) => piece.type === "king")[0];
 
   const blocks = checkBlocks(board.tiles, king.rank, king.file);
@@ -266,14 +266,14 @@ export function calculateLegalMoves(
     const pinBlocks = getPinBlocks(
       board.tiles,
       [king.rank, king.file],
-      [piece.rank, piece.file]
+      [piece.rank, piece.file],
     );
     if (pinBlocks) pieceMoves = filterMoves(pieceMoves, pinBlocks);
 
     // Record legal moves
     moves.set(
       piece.id,
-      new Set<TileData["id"]>(Array.from(pieceMoves, (move) => move.id))
+      new Set<TileData["id"]>(Array.from(pieceMoves, (move) => move.id)),
     );
   }
 
@@ -283,7 +283,8 @@ export function calculateLegalMoves(
   }
 
   // Checkmate
-  if (isAttacked(board.tiles[king.rank * 8 + king.file], turn)) return null;
+  if (isAttacked(board.tiles[king.rank * 8 + king.file], board.turn))
+    return null;
 
   // Stalemate
   return new Map();
@@ -305,6 +306,7 @@ export function applyMove(board: BoardData, move: Move): BoardData {
   const piece = move.piece;
   const sourceTile = board.tiles[+move.from];
   const targetTile = board.tiles[+move.to];
+  const resetEP = board.epPawn;
 
   // Extra checks for kings
   if (piece.type === "king" && Math.abs(+move.from - +move.to) === 2) {
@@ -313,16 +315,15 @@ export function applyMove(board: BoardData, move: Move): BoardData {
     if (piece.type === "king") piece.params.set("hasMoved", true);
     // Extra checks for pawns
     else if (piece.type === "pawn") {
-      const direction = targetTile.file > piece.file ? 1 : -1;
-      const potentialPawn =
-        board.tiles[piece.rank * 8 + piece.file + direction].piece;
-
       // Check if pawn captured via en passant
-      if (potentialPawn?.params.get("movedTwo"))
-        deletePiece(board, potentialPawn);
+      if (targetTile.piece && targetTile.piece === board.epPawn)
+        deletePiece(board, board.epPawn);
+
       // Check if pawn moved two squares
-      else if (Math.abs(+move.from - +move.to) === 16)
+      if (Math.abs(+move.from - +move.to) === 16) {
         piece.params.set("movedTwo", true);
+        board.epPawn = piece;
+      } else piece.params.set("movedTwo", false);
     }
     // Extra check for rook
     else if (piece.type === "rook") {
@@ -338,14 +339,14 @@ export function applyMove(board: BoardData, move: Move): BoardData {
           removeCastlingMove(
             board.tiles,
             board.tiles[piece.rank * 8 + 4].piece!,
-            "left"
+            "left",
           );
         // piece.file === 7
         else
           removeCastlingMove(
             board.tiles,
             board.tiles[piece.rank * 8 + 4].piece!,
-            "right"
+            "right",
           );
       }
     }
@@ -370,6 +371,9 @@ export function applyMove(board: BoardData, move: Move): BoardData {
     else calculateMoves(piece, board.tiles, [sourceTile.rank, sourceTile.file]);
   }
 
+  // Reset en passant pawn if necessary
+  if (resetEP) board.epPawn = null;
+
   // Recalculate possible moves for pieces interacting with source & target tiles
   sourceTile.attackers.forEach((unblockedPiece) => {
     if (unblockedPiece !== piece)
@@ -380,15 +384,115 @@ export function applyMove(board: BoardData, move: Move): BoardData {
   });
 
   targetTile.attackers.forEach((blockedPiece) =>
-    blockMoves(blockedPiece, board.tiles, [targetTile.rank, targetTile.file])
+    blockMoves(blockedPiece, board.tiles, [targetTile.rank, targetTile.file]),
   );
 
   return board;
 }
 
+export function generateFEN(board: BoardData): string {
+  let boardFen = "";
+  let emptySpaces = 0;
+  for (const tile of board.tiles) {
+    if (tile.piece) {
+      // Notate number of empty spaces
+      if (emptySpaces > 0) {
+        boardFen += emptySpaces;
+        emptySpaces = 0;
+      }
+
+      // Notate piece based on type and color
+      switch (tile.piece.type) {
+        case "pawn":
+          boardFen += tile.piece.color === "white" ? "P" : "p";
+          break;
+        case "rook":
+          boardFen += tile.piece.color === "white" ? "R" : "r";
+          break;
+        case "knight":
+          boardFen += tile.piece.color === "white" ? "N" : "n";
+          break;
+        case "bishop":
+          boardFen += tile.piece.color === "white" ? "B" : "b";
+          break;
+        case "queen":
+          boardFen += tile.piece.color === "white" ? "Q" : "q";
+          break;
+        case "king":
+          boardFen += tile.piece.color === "white" ? "K" : "k";
+          break;
+      }
+    } else ++emptySpaces; // Count empty spaces between pieces
+
+    // Notate next rank
+    if (+tile.id % 8 === 7) {
+      // Notate number of empty spaces
+      if (emptySpaces > 0) {
+        boardFen += emptySpaces;
+        emptySpaces = 0;
+      }
+
+      if (tile.id !== "63") boardFen += "/";
+    }
+  }
+
+  const turnFen = board.turn === "white" ? "w" : "b";
+
+  function getCastlingFEN(king: PieceData): string {
+    const moves = getCastlingMoves(board.tiles, king, false);
+    // console.log([...moves]);
+    let queenSide = false;
+    let kingSide = false;
+    for (const move of moves) {
+      if (move.file < king.file) queenSide = true;
+      else kingSide = true;
+    }
+    let fen = "";
+    if (kingSide) fen += king.color === "white" ? "K" : "k";
+    if (queenSide) fen += king.color === "white" ? "Q" : "q";
+    return fen;
+  }
+
+  let castlingFen = "";
+
+  for (const piece of board.whitePieces) {
+    if (piece.type === "king") castlingFen += getCastlingFEN(piece);
+  }
+
+  for (const piece of board.blackPieces) {
+    if (piece.type === "king") castlingFen += getCastlingFEN(piece);
+  }
+
+  function getEpTile(): string {
+    if (!board.epPawn) return "-";
+    const direction = board.epPawn.color === "white" ? 1 : -1;
+    const epTarget =
+      board.tiles[(board.epPawn.rank + direction) * 8 + board.epPawn.file];
+    return encodeTile(epTarget);
+  }
+
+  const epFen = getEpTile();
+  const halfFen = +board.halfmoves;
+  const fullFen = +board.fullmoves;
+
+  return (
+    boardFen +
+    " " +
+    turnFen +
+    " " +
+    (castlingFen ? castlingFen : "-") +
+    " " +
+    epFen +
+    " " +
+    halfFen +
+    " " +
+    fullFen
+  );
+}
+
 export function getHighlightedTiles(
   moves: Map<PieceData["id"], Set<TileData["id"]>>,
-  pieceID: PieceData["id"]
+  pieceID: PieceData["id"],
 ): boolean[] {
   const tiles = Array(64).fill(false);
   moves.get(pieceID)?.forEach((move) => (tiles[+move] = true));
@@ -418,13 +522,17 @@ function createBoard(): TileData[] {
 function setup(
   pieces: [
     Set<{ type: type; rank: dimension; file: dimension }>,
-    Set<{ type: type; rank: dimension; file: dimension }>
-  ]
+    Set<{ type: type; rank: dimension; file: dimension }>,
+  ],
 ): BoardData {
   const board = {
     tiles: createBoard(),
     whitePieces: new Set<PieceData>(),
     blackPieces: new Set<PieceData>(),
+    turn: "white" as color,
+    halfmoves: 0,
+    fullmoves: 0,
+    epPawn: null,
   };
 
   let pieceID = 0;
@@ -475,7 +583,7 @@ function setup(
 
 function defaultStartPosition(): [
   Set<{ type: type; rank: dimension; file: dimension }>,
-  Set<{ type: type; rank: dimension; file: dimension }>
+  Set<{ type: type; rank: dimension; file: dimension }>,
 ] {
   return [
     new Set<{ type: type; rank: dimension; file: dimension }>([
@@ -519,15 +627,12 @@ function defaultStartPosition(): [
 
 function useChess() {
   const boardData = useRef<BoardData>(setup(defaultStartPosition()));
-  const turn = useRef<color>("white");
-  const whitePawn = useRef<PieceData | null>(null);
-  const blackPawn = useRef<PieceData | null>(null);
 
   // Attempt to move piece on board and recalculate moves if successful
   const movePiece = (
     from: TileData["id"],
     to: TileData["id"],
-    legalMoves: Map<PieceData["id"], Set<TileData["id"]>>
+    legalMoves: Map<PieceData["id"], Set<TileData["id"]>>,
   ): Map<string, Set<string>> | null => {
     const piece = boardData.current.tiles[+from].piece;
     if (piece && legalMoves.get(piece.id)?.has(to)) {
@@ -535,26 +640,14 @@ function useChess() {
       const capture = boardData.current.tiles[+to].piece ?? undefined;
       applyMove(boardData.current, { from, to, piece, capture });
 
-      // Reset pawn that moved two squares last turn
-      if (turn.current === "white" && blackPawn.current) {
-        blackPawn.current.params.set("movedTwo", false);
-        blackPawn.current = null;
-      } else if (turn.current === "black" && whitePawn.current) {
-        whitePawn.current.params.set("movedTwo", false);
-        whitePawn.current = null;
-      }
-
-      // Check if a pawn moved two squares this turn
-      if (piece.params.get("movedTwo")) {
-        if (turn.current === "white") whitePawn.current = piece;
-        else blackPawn.current = piece;
-      }
-
       // Switch turns
-      turn.current = turn.current === "white" ? "black" : "white";
+      boardData.current.turn =
+        boardData.current.turn === "white" ? "black" : "white";
+      boardData.current.halfmoves++;
+      if (boardData.current.turn === "white") boardData.current.fullmoves++;
 
       // Calculate legal moves for new current color
-      const moves = calculateLegalMoves(boardData.current, turn.current);
+      const moves = calculateLegalMoves(boardData.current);
 
       return moves;
     }
@@ -564,7 +657,6 @@ function useChess() {
   return {
     boardData,
     movePiece,
-    turn,
   };
 }
 

@@ -19,12 +19,43 @@ export function isAttacked(tile: TileData, pieceColor: color): boolean {
 
 const FILES = "abcdefgh";
 
+export function encodeTile(tile: TileData): string {
+  const rank = 8 - tile.rank;
+  const file = FILES[tile.file];
+  return file + rank;
+}
+
+export function encodeMove(source: TileData, target: TileData): string {
+  return encodeTile(source) + encodeTile(target);
+}
+
+function decodeTile(tile: string): string {
+  if (
+    tile.length !== 2 ||
+    !FILES.includes(tile[0]) ||
+    +tile[1] < 1 ||
+    +tile[1] > 8
+  )
+    return "";
+  const rank = 8 - +tile.charAt(1);
+  const file = FILES.indexOf(tile.charAt(0));
+
+  // console.log(tile, rank, file, rank * 8 + file);
+
+  return (rank * 8 + file).toString();
+}
+
+export function decodeMove(move: string): [string, string] {
+  if (move.length !== 4 && move.length !== 5) return ["", ""];
+  return [decodeTile(move.substring(0, 2)), decodeTile(move.substring(2, 4))];
+}
+
 interface Props {
   tileState: TileState;
   active: boolean;
   selectPiece: (
     piece: PieceState | null,
-    moves: Map<PieceData["id"], Set<TileData["id"]>>
+    moves: Map<PieceData["id"], Set<TileData["id"]>>,
   ) => undefined;
   handleTileClick: (tileID: TileData["id"]) => undefined;
 }
@@ -55,7 +86,7 @@ const Tile = memo(
         ) : null}
       </div>
     );
-  }
+  },
 );
 
 export default Tile;
