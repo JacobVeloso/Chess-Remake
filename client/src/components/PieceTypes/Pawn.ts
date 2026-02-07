@@ -78,7 +78,7 @@ export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
 
 export function pawnBlock(
   piece: PieceData,
-  blockedPos: [dimension, dimension]
+  blockedPos: [dimension, dimension],
 ): Set<TileData> {
   const canMoveTwo =
     (piece.color === "white" && piece.rank === 6) ||
@@ -102,7 +102,7 @@ export function pawnBlock(
 export function pawnUnblock(
   piece: PieceData,
   board: TileData[],
-  unblockedPos: [dimension, dimension]
+  unblockedPos: [dimension, dimension],
 ): Set<TileData> {
   const [unblockedRank, unblockedFile] = unblockedPos;
   const direction = piece.color === "white" ? -1 : 1;
@@ -129,7 +129,7 @@ export function pawnUnblock(
 
 export function checkPawnMoves(
   board: TileData[],
-  pawn: PieceData
+  pawn: PieceData,
 ): Set<TileData> {
   if (pawn.type !== "pawn") return new Set<TileData>();
 
@@ -180,7 +180,7 @@ export function checkPawnMoves(
 export function promote(
   board: TileData[],
   piece: PieceData,
-  newType: type
+  newType: type,
 ): void {
   if (piece.type !== "pawn") return;
 
@@ -223,5 +223,5 @@ export function promote(
   piece.params.delete("movedTwo");
 
   // Recaulculate piece moves
-  calculateMoves(piece, board, [piece.rank, piece.file]);
+  calculateMoves(piece, board);
 }

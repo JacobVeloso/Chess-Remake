@@ -18,7 +18,7 @@ import {
 } from "@dnd-kit/core";
 import { createContext, useRef, useState } from "react";
 
-const apiUrl = import.meta.env.VITE_PLAYER;
+const PLAYER = import.meta.env.VITE_PLAYER;
 
 function getPieceState(
   board: TileState[],
@@ -181,7 +181,7 @@ const Board = () => {
         return; // End of game
       }
 
-      if (apiUrl === "engine") engineMove();
+      if (PLAYER === "engine") engineMove();
     }
   }
 
@@ -201,7 +201,7 @@ const Board = () => {
         return;
       }
 
-      if (apiUrl === "engine") engineMove();
+      if (PLAYER === "engine") engineMove();
     }
   }
 

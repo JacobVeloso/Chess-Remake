@@ -1,23 +1,27 @@
-import type { dimension, PieceData, TileData } from "../types.ts";
+import type { dimension, PieceData, TileData, Move } from "../types.ts";
 import { addStraightMoves } from "./Queen.ts";
 
 export function rookMoves(
   piece: PieceData,
   board: TileData[],
-  prevPos: [dimension, dimension]
+  lastMove: Move | null = null,
 ): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
   const moves = new Set<TileData>();
 
-  // Determine which axis rook moved along
-  const [prevRank, prevFile] = prevPos;
-
+  // Ensure move types exist
   if (!piece.moves.has("N-S")) piece.moves.set("N-S", new Set<TileData>());
   if (!piece.moves.has("W-E")) piece.moves.set("W-E", new Set<TileData>());
 
-  const moved = rank !== prevRank || file !== prevFile;
+  const moved = lastMove !== null;
 
-  if (prevFile !== piece.file || !moved) {
+  // Determine which axis rook moved along
+  const sourceTile = lastMove ? board[+lastMove.from] : null;
+  const [prevRank, prevFile] = [
+    sourceTile?.rank ?? rank,
+    sourceTile?.file ?? file,
+  ];
+  if (!moved || prevFile !== file) {
     if (moved) {
       // Remove current position
       piece.moves.get("W-E")?.delete(board[rank * 8 + file]);
@@ -40,7 +44,7 @@ export function rookMoves(
         -1,
         0,
         piece.moves.get("N-S") ?? new Set<TileData>(),
-        moves
+        moves,
       );
 
     // Add new downward moves
@@ -51,11 +55,33 @@ export function rookMoves(
         1,
         0,
         piece.moves.get("N-S") ?? new Set<TileData>(),
-        moves
+        moves,
+      );
+
+    // Add left moves (after capture)
+    if (file > 0 && lastMove?.capture && prevFile > file)
+      addStraightMoves(
+        board,
+        piece,
+        0,
+        -1,
+        piece.moves.get("W-E") ?? new Set<TileData>(),
+        moves,
+      );
+
+    // Add right moves (after capture)
+    if (file < 7 && lastMove?.capture && prevFile < file)
+      addStraightMoves(
+        board,
+        piece,
+        0,
+        1,
+        piece.moves.get("W-E") ?? new Set<TileData>(),
+        moves,
       );
   }
 
-  if (prevRank !== piece.rank || !moved) {
+  if (!moved || prevRank !== rank) {
     if (moved) {
       // Remove current position
       piece.moves.get("N-S")?.delete(board[rank * 8 + file]);
@@ -78,7 +104,7 @@ export function rookMoves(
         0,
         -1,
         piece.moves.get("W-E") ?? new Set<TileData>(),
-        moves
+        moves,
       );
 
     // Add new right moves
@@ -89,7 +115,29 @@ export function rookMoves(
         0,
         1,
         piece.moves.get("W-E") ?? new Set<TileData>(),
-        moves
+        moves,
+      );
+
+    // Add upward moves (after capture)
+    if (rank > 0 && lastMove?.capture && prevRank > rank)
+      addStraightMoves(
+        board,
+        piece,
+        -1,
+        0,
+        piece.moves.get("N-S") ?? new Set<TileData>(),
+        moves,
+      );
+
+    // Add downward moves (after capture)
+    if (rank < 7 && lastMove?.capture && prevRank < rank)
+      addStraightMoves(
+        board,
+        piece,
+        1,
+        0,
+        piece.moves.get("N-S") ?? new Set<TileData>(),
+        moves,
       );
   }
   return moves;
@@ -97,7 +145,7 @@ export function rookMoves(
 
 export function rookMovesAfterCastle(
   piece: PieceData,
-  board: TileData[]
+  board: TileData[],
 ): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
   const moves = new Set<TileData>();
@@ -118,7 +166,7 @@ export function rookMovesAfterCastle(
     verticalDir,
     0,
     piece.moves.get("N-S") ?? new Set<TileData>(),
-    moves
+    moves,
   );
 
   // Recalculate moves for open horizontal
@@ -128,7 +176,7 @@ export function rookMovesAfterCastle(
     0,
     horizontalDir,
     piece.moves.get("W-E") ?? new Set<TileData>(),
-    moves
+    moves,
   );
 
   // Add move in direction of king
@@ -139,7 +187,7 @@ export function rookMovesAfterCastle(
 
 export function rookBlock(
   piece: PieceData,
-  blockedPos: [dimension, dimension]
+  blockedPos: [dimension, dimension],
 ): Set<TileData> {
   const [blockedRank, blockedFile] = blockedPos;
 
@@ -178,7 +226,7 @@ export function rookBlock(
 export function rookUnblock(
   piece: PieceData,
   board: TileData[],
-  unblockedPos: [dimension, dimension]
+  unblockedPos: [dimension, dimension],
 ): Set<TileData> {
   const [unblockedRank, unblockedFile] = unblockedPos;
   let direction: -1 | 1;

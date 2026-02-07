@@ -12,7 +12,9 @@ import { memo } from "react";
 
 export function isAttacked(tile: TileData, pieceColor: color): boolean {
   for (const attacker of tile.attackers) {
-    if (attacker.color !== pieceColor) return true;
+    if (attacker.color !== pieceColor) {
+      if (attacker.type !== "pawn" || attacker.file !== tile.file) return true;
+    }
   }
   return false;
 }
@@ -29,7 +31,7 @@ export function encodeMove(source: TileData, target: TileData): string {
   return encodeTile(source) + encodeTile(target);
 }
 
-function decodeTile(tile: string): string {
+export function decodeTile(tile: string): string {
   if (
     tile.length !== 2 ||
     !FILES.includes(tile[0]) ||

@@ -4,12 +4,12 @@ import { rookMoves, rookBlock, rookUnblock } from "./PieceTypes/Rook";
 import { bishopMoves, bishopBlock, bishopUnblock } from "./PieceTypes/Bishop";
 import { queenMoves, queenBlock, queenUnblock } from "./PieceTypes/Queen";
 import { kingMoves } from "./PieceTypes/King";
-import type { PieceData, TileData, dimension } from "./types";
+import type { PieceData, TileData, dimension, Move } from "./types";
 
 export function calculateMoves(
   piece: PieceData,
   board: TileData[],
-  prevPos: [dimension, dimension]
+  lastMove: Move | null = null,
 ): Set<TileData> {
   let moves: Set<TileData>;
   switch (piece.type) {
@@ -20,13 +20,13 @@ export function calculateMoves(
       moves = knightMoves(piece, board);
       break;
     case "rook":
-      moves = rookMoves(piece, board, prevPos);
+      moves = rookMoves(piece, board, lastMove);
       break;
     case "bishop":
-      moves = bishopMoves(piece, board, prevPos);
+      moves = bishopMoves(piece, board, lastMove);
       break;
     case "queen":
-      moves = queenMoves(piece, board, prevPos);
+      moves = queenMoves(piece, board, lastMove);
       break;
     case "king":
       moves = kingMoves(piece, board);
@@ -36,7 +36,7 @@ export function calculateMoves(
   }
   // Add moves to board
   moves.forEach((move) =>
-    board[move.rank * 8 + move.file].attackers.add(piece)
+    board[move.rank * 8 + move.file].attackers.add(piece),
   );
   return moves;
 }
@@ -44,7 +44,7 @@ export function calculateMoves(
 export function blockMoves(
   piece: PieceData,
   board: TileData[],
-  blockedPos: [dimension, dimension]
+  blockedPos: [dimension, dimension],
 ): Set<TileData> {
   let blockedMoves: Set<TileData>;
   switch (piece.type) {
@@ -71,7 +71,7 @@ export function blockMoves(
   }
   // Remove blocked moves from piece and board
   blockedMoves.forEach((move) =>
-    board[move.rank * 8 + move.file].attackers.delete(piece)
+    board[move.rank * 8 + move.file].attackers.delete(piece),
   );
   return blockedMoves;
 }
@@ -79,7 +79,7 @@ export function blockMoves(
 export function unblockMoves(
   piece: PieceData,
   board: TileData[],
-  blockedPos: [dimension, dimension]
+  blockedPos: [dimension, dimension],
 ): Set<TileData> {
   let unblockedMoves: Set<TileData>;
   switch (piece.type) {
@@ -106,7 +106,7 @@ export function unblockMoves(
   }
   // Add blocked moves to piece and board
   unblockedMoves.forEach((move) =>
-    board[move.rank * 8 + move.file].attackers.add(piece)
+    board[move.rank * 8 + move.file].attackers.add(piece),
   );
   return unblockedMoves;
 }

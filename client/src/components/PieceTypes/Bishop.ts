@@ -1,26 +1,31 @@
-import type { dimension, PieceData, TileData } from "../types.ts";
+import type { dimension, PieceData, TileData, Move } from "../types.ts";
 import { addStraightMoves } from "./Queen.ts";
 
 export function bishopMoves(
   piece: PieceData,
   board: TileData[],
-  prevPos: [dimension, dimension]
+  lastMove: Move | null,
 ): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
   const moves = new Set<TileData>();
 
-  // Determine which axis bishop moved along
-  const [prevRank, prevFile] = prevPos;
-
+  // Ensure move types exist
   if (!piece.moves.has("NW-SE")) piece.moves.set("NW-SE", new Set<TileData>());
   if (!piece.moves.has("NE-SW")) piece.moves.set("NE-SW", new Set<TileData>());
 
-  const moved = rank !== prevRank || file !== prevFile;
+  const moved = lastMove !== null;
+
+  // Determine which axis rook moved along
+  const sourceTile = lastMove ? board[+lastMove.from] : null;
+  const [prevRank, prevFile] = [
+    sourceTile?.rank ?? rank,
+    sourceTile?.file ?? file,
+  ];
 
   if (
-    (prevRank > piece.rank && prevFile < piece.file) ||
-    (prevRank < piece.rank && prevFile > piece.file) ||
-    !moved
+    !moved ||
+    (prevRank > rank && prevFile < file) ||
+    (prevRank < rank && prevFile > file)
   ) {
     if (moved) {
       // Remove current position
@@ -44,7 +49,7 @@ export function bishopMoves(
         -1,
         -1,
         piece.moves.get("NW-SE") ?? new Set<TileData>(),
-        moves
+        moves,
       );
 
     // Lower right diagonal
@@ -55,14 +60,48 @@ export function bishopMoves(
         1,
         1,
         piece.moves.get("NW-SE") ?? new Set<TileData>(),
-        moves
+        moves,
+      );
+
+    // Upper right diagonal (after capture)
+    if (
+      rank > 0 &&
+      file < 7 &&
+      lastMove?.capture &&
+      prevRank > rank &&
+      prevFile < file
+    )
+      addStraightMoves(
+        board,
+        piece,
+        -1,
+        1,
+        piece.moves.get("NE-SW") ?? new Set<TileData>(),
+        moves,
+      );
+
+    // Lower left diagonal (after capture)
+    if (
+      rank < 7 &&
+      file > 0 &&
+      lastMove?.capture &&
+      prevRank < rank &&
+      prevFile > file
+    )
+      addStraightMoves(
+        board,
+        piece,
+        1,
+        -1,
+        piece.moves.get("NE-SW") ?? new Set<TileData>(),
+        moves,
       );
   }
 
   if (
-    (prevRank > piece.rank && prevFile > piece.file) ||
-    (prevRank < piece.rank && prevFile < piece.file) ||
-    !moved
+    !moved ||
+    (prevRank > rank && prevFile > file) ||
+    (prevRank < rank && prevFile < file)
   ) {
     if (moved) {
       // Remove current position
@@ -86,7 +125,7 @@ export function bishopMoves(
         -1,
         1,
         piece.moves.get("NE-SW") ?? new Set<TileData>(),
-        moves
+        moves,
       );
 
     // Lower left diagonal
@@ -97,7 +136,41 @@ export function bishopMoves(
         1,
         -1,
         piece.moves.get("NE-SW") ?? new Set<TileData>(),
-        moves
+        moves,
+      );
+
+    // Upper left diagonal (after capture)
+    if (
+      rank > 0 &&
+      file > 0 &&
+      lastMove?.capture &&
+      prevRank > rank &&
+      prevFile > file
+    )
+      addStraightMoves(
+        board,
+        piece,
+        -1,
+        -1,
+        piece.moves.get("NW-SE") ?? new Set<TileData>(),
+        moves,
+      );
+
+    // Lower right diagonal (after capture)
+    if (
+      rank < 7 &&
+      file < 7 &&
+      lastMove?.capture &&
+      prevRank < rank &&
+      prevFile < file
+    )
+      addStraightMoves(
+        board,
+        piece,
+        1,
+        1,
+        piece.moves.get("NW-SE") ?? new Set<TileData>(),
+        moves,
       );
   }
   return moves;
@@ -105,7 +178,7 @@ export function bishopMoves(
 
 export function bishopBlock(
   piece: PieceData,
-  blockedPos: [dimension, dimension]
+  blockedPos: [dimension, dimension],
 ): Set<TileData> {
   const [blockedRank, blockedFile] = blockedPos;
   let rankDirection: -1 | 1;
@@ -146,7 +219,7 @@ export function bishopBlock(
 export function bishopUnblock(
   piece: PieceData,
   board: TileData[],
-  unblockedPos: [dimension, dimension]
+  unblockedPos: [dimension, dimension],
 ): Set<TileData> {
   const [unblockedRank, unblockedFile] = unblockedPos;
   let rankDirection: -1 | 1;

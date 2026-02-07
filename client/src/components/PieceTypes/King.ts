@@ -60,15 +60,14 @@ export function checkBlocks(
     !isAttacked(tile, tile.piece.color) // check if anything is attacking the king
   )
     return null;
-
+  //console.log("king in check");
   const king = tile.piece!;
 
   // Check if king is attacked by multiple pieces
   const attackers = Array.from(tile.attackers).filter(
     (attacker: PieceData) => attacker.color !== king.color,
   );
-  if (attackers.length > 1)
-    return king.moves.get("standard") ?? new Set<TileData>();
+  if (attackers.length > 1) return new Set<TileData>();
 
   // Calculate block filter
   return blockingMoves(

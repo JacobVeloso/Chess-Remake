@@ -1,14 +1,15 @@
 import { useRef } from "react";
-import type {
-  PieceData,
-  TileData,
-  BoardData,
-  Move,
-  color,
-  type,
-  dimension,
+import {
+  type PieceData,
+  type TileData,
+  type BoardData,
+  type Move,
+  type color,
+  type type,
+  type dimension,
+  FENData,
 } from "./types";
-import { encodeTile } from "./Tile.tsx";
+import { encodeTile, decodeTile } from "./Tile.tsx";
 import {
   checkBlocks,
   filterAttackedTiles,
@@ -232,6 +233,7 @@ export function calculateLegalMoves(
   const king = Array.from(pieces).filter((piece) => piece.type === "king")[0];
 
   const blocks = checkBlocks(board.tiles, king.rank, king.file);
+  //console.log([...(blocks ?? new Set([board.tiles[0]]))]);
 
   const moves = new Map<PieceData["id"], Set<TileData["id"]>>();
 
@@ -256,11 +258,14 @@ export function calculateLegalMoves(
       illegalCastles.forEach((move) => pieceMoves.delete(move));
 
       // Filter out moves that would put king in check
+      //console.log([...pieceMoves]);
       pieceMoves = filterAttackedTiles(board.tiles, piece, pieceMoves);
+      //console.log([...pieceMoves]);
     }
 
     // Filter by moves that can block check (if applicable)
-    if (blocks) pieceMoves = filterMoves(pieceMoves, blocks);
+    if (blocks && piece.type !== "king")
+      pieceMoves = filterMoves(pieceMoves, blocks);
 
     // Filter by moves that keep piece pinned (if applicable)
     const pinBlocks = getPinBlocks(
@@ -306,7 +311,10 @@ export function applyMove(board: BoardData, move: Move): BoardData {
   const piece = move.piece;
   const sourceTile = board.tiles[+move.from];
   const targetTile = board.tiles[+move.to];
-  const resetEP = board.epPawn;
+
+  // Reset en passant pawn
+  board.epPawn?.params.set("movedTwo", false);
+  board.epPawn = null;
 
   // Extra checks for kings
   if (piece.type === "king" && Math.abs(+move.from - +move.to) === 2) {
@@ -316,8 +324,12 @@ export function applyMove(board: BoardData, move: Move): BoardData {
     // Extra checks for pawns
     else if (piece.type === "pawn") {
       // Check if pawn captured via en passant
-      if (targetTile.piece && targetTile.piece === board.epPawn)
-        deletePiece(board, board.epPawn);
+      if (targetTile.file !== sourceTile.file && !targetTile.piece) {
+        deletePiece(
+          board,
+          board.tiles[sourceTile.rank * 8 + targetTile.file].piece!,
+        );
+      }
 
       // Check if pawn moved two squares
       if (Math.abs(+move.from - +move.to) === 16) {
@@ -335,13 +347,14 @@ export function applyMove(board: BoardData, move: Move): BoardData {
         board.tiles[piece.rank * 8 + 4].piece!.type === "king" &&
         !board.tiles[piece.rank * 8 + 4].piece!.params.get("hasMoved")
       ) {
-        if (piece.file === 0)
+        const king = board.tiles[piece.rank * 8 + 4].piece!;
+        if (piece.file < king.file)
           removeCastlingMove(
             board.tiles,
             board.tiles[piece.rank * 8 + 4].piece!,
             "left",
           );
-        // piece.file === 7
+        // piece.file > king.file
         else
           removeCastlingMove(
             board.tiles,
@@ -363,16 +376,14 @@ export function applyMove(board: BoardData, move: Move): BoardData {
 
     // Promote if pawn reached end of board
     if (
-      (piece.type === "pawn" && piece.color === "white" && piece.rank === 0) ||
-      (piece.color === "black" && piece.rank === 7)
+      piece.type === "pawn" &&
+      ((piece.color === "white" && piece.rank === 0) ||
+        (piece.color === "black" && piece.rank === 7))
     )
       promote(board.tiles, piece, "queen"); // TODO: Allow user to choose piece
     // Recalculate possible moves for piece
-    else calculateMoves(piece, board.tiles, [sourceTile.rank, sourceTile.file]);
+    else calculateMoves(piece, board.tiles, move);
   }
-
-  // Reset en passant pawn if necessary
-  if (resetEP) board.epPawn = null;
 
   // Recalculate possible moves for pieces interacting with source & target tiles
   sourceTile.attackers.forEach((unblockedPiece) => {
@@ -519,114 +530,106 @@ function createBoard(): TileData[] {
   });
 }
 
-function setup(
-  pieces: [
-    Set<{ type: type; rank: dimension; file: dimension }>,
-    Set<{ type: type; rank: dimension; file: dimension }>,
-  ],
-): BoardData {
-  const board = {
+function setup(): BoardData {
+  const OPENING_FEN = import.meta.env.VITE_FEN;
+  const [placements, active, castles, enPassants, halfmoves, fullmoves] =
+    OPENING_FEN.split(" ");
+
+  // Instantiate board
+  const board: BoardData = {
     tiles: createBoard(),
     whitePieces: new Set<PieceData>(),
     blackPieces: new Set<PieceData>(),
-    turn: "white" as color,
-    halfmoves: 0,
-    fullmoves: 0,
+    turn: (active === "w" ? "white" : "black") as color,
+    halfmoves: +halfmoves,
+    fullmoves: +fullmoves,
     epPawn: null,
   };
 
-  let pieceID = 0;
+  // Place all pieces
+  const ranks = placements.split("/");
+  let id = 0;
+  for (let i = 0; i < 8; ++i) {
+    const rank = ranks[i];
+    let j = 0;
+    for (const data of rank) {
+      if (isNaN(+data)) {
+        const metadata = FENData.get(data)!;
+        const piece = {
+          id: (id++).toString(),
+          color: metadata[0] as color,
+          type: metadata[1] as type,
+          rank: i as dimension,
+          file: j as dimension,
+          moves: new Map<string, Set<TileData>>(),
+          params: new Map<string, boolean>(),
+        };
+        board.tiles[i * 8 + j++].piece = piece;
+        (metadata[0] === "white" ? board.whitePieces : board.blackPieces).add(
+          piece,
+        );
+        // Check for enpassant
+        if (metadata[1] === "pawn") {
+          piece.params.set("movedTwo", false);
+          const epID = decodeTile(enPassants);
+          if (epID !== "") {
+            const [epRank, epFile] = [+epID / 8, +epID % 8];
+            const direction = metadata[0] === "white" ? -1 : 1;
+            if (
+              board.tiles[(epRank + direction) * 8 + epFile].piece === piece
+            ) {
+              piece.params.set("movedTwo", true);
+              board.epPawn = piece;
+            }
+          }
+        }
 
-  const [whitePieces, blackPieces] = pieces;
-  for (const pieceData of whitePieces) {
-    const piece = {
-      id: "" + pieceID++,
-      color: "white" as color,
-      type: pieceData.type,
-      rank: pieceData.rank,
-      file: pieceData.file,
-      moves: new Map<string, Set<TileData>>(),
-      params: new Map<string, boolean>(),
-    };
-    if (pieceData.type === "pawn") piece.params.set("movedTwo", false);
-    else if (pieceData.type === "king" || pieceData.type === "rook")
-      piece.params.set("hasMoved", false);
-
-    board.tiles[pieceData.rank * 8 + pieceData.file].piece = piece;
-    board.whitePieces.add(piece);
+        // Check for castling rights
+        else if (metadata[1] === "king" || metadata[1] === "rook") {
+          piece.params.set("hasMoved", true);
+          for (const castle of castles) {
+            if (
+              castle === "K" &&
+              piece.color === "white" &&
+              (piece.type === "king" ||
+                (piece.type === "rook" && piece.rank === 7 && piece.file === 7))
+            )
+              piece.params.set("hasMoved", false);
+            else if (
+              castle === "Q" &&
+              piece.color === "white" &&
+              (piece.type === "king" ||
+                (piece.type === "rook" && piece.rank === 7 && piece.file === 0))
+            )
+              piece.params.set("hasMoved", false);
+            else if (
+              castle === "k" &&
+              piece.color === "black" &&
+              (piece.type === "king" ||
+                (piece.type === "rook" && piece.rank === 0 && piece.file === 7))
+            )
+              piece.params.set("hasMoved", false);
+            else if (
+              castle === "q" &&
+              piece.color === "black" &&
+              (piece.type === "king" ||
+                (piece.type === "rook" && piece.rank === 0 && piece.file === 0))
+            )
+              piece.params.set("hasMoved", false);
+          }
+        }
+      } else j += +data;
+    }
   }
 
-  for (const pieceData of blackPieces) {
-    const piece = {
-      id: "" + pieceID++,
-      color: "black" as color,
-      type: pieceData.type,
-      rank: pieceData.rank,
-      file: pieceData.file,
-      moves: new Map<string, Set<TileData>>(),
-      params: new Map<string, boolean>(),
-    };
-    if (pieceData.type === "pawn") piece.params.set("movedTwo", false);
-    else if (pieceData.type === "king" || pieceData.type === "rook")
-      piece.params.set("hasMoved", false);
+  for (const piece of board.whitePieces) calculateMoves(piece, board.tiles);
+  for (const piece of board.blackPieces) calculateMoves(piece, board.tiles);
 
-    board.tiles[pieceData.rank * 8 + pieceData.file].piece = piece;
-    board.blackPieces.add(piece);
-  }
-
-  for (const piece of board.whitePieces)
-    calculateMoves(piece, board.tiles, [piece.rank, piece.file]);
-  for (const piece of board.blackPieces)
-    calculateMoves(piece, board.tiles, [piece.rank, piece.file]);
   return board;
 }
 
-function defaultStartPosition(): [
-  Set<{ type: type; rank: dimension; file: dimension }>,
-  Set<{ type: type; rank: dimension; file: dimension }>,
-] {
-  return [
-    new Set<{ type: type; rank: dimension; file: dimension }>([
-      { type: "pawn", rank: 6, file: 0 },
-      { type: "pawn", rank: 6, file: 1 },
-      { type: "pawn", rank: 6, file: 2 },
-      { type: "pawn", rank: 6, file: 3 },
-      { type: "pawn", rank: 6, file: 4 },
-      { type: "pawn", rank: 6, file: 5 },
-      { type: "pawn", rank: 6, file: 6 },
-      { type: "pawn", rank: 6, file: 7 },
-      { type: "rook", rank: 7, file: 0 },
-      { type: "knight", rank: 7, file: 1 },
-      { type: "bishop", rank: 7, file: 2 },
-      { type: "queen", rank: 7, file: 3 },
-      { type: "king", rank: 7, file: 4 },
-      { type: "bishop", rank: 7, file: 5 },
-      { type: "knight", rank: 7, file: 6 },
-      { type: "rook", rank: 7, file: 7 },
-    ]),
-    new Set<{ type: type; rank: dimension; file: dimension }>([
-      { type: "rook", rank: 0, file: 0 },
-      { type: "knight", rank: 0, file: 1 },
-      { type: "bishop", rank: 0, file: 2 },
-      { type: "queen", rank: 0, file: 3 },
-      { type: "king", rank: 0, file: 4 },
-      { type: "bishop", rank: 0, file: 5 },
-      { type: "knight", rank: 0, file: 6 },
-      { type: "rook", rank: 0, file: 7 },
-      { type: "pawn", rank: 1, file: 0 },
-      { type: "pawn", rank: 1, file: 1 },
-      { type: "pawn", rank: 1, file: 2 },
-      { type: "pawn", rank: 1, file: 3 },
-      { type: "pawn", rank: 1, file: 4 },
-      { type: "pawn", rank: 1, file: 5 },
-      { type: "pawn", rank: 1, file: 6 },
-      { type: "pawn", rank: 1, file: 7 },
-    ]),
-  ];
-}
-
 function useChess() {
-  const boardData = useRef<BoardData>(setup(defaultStartPosition()));
+  const boardData = useRef<BoardData>(setup());
 
   // Attempt to move piece on board and recalculate moves if successful
   const movePiece = (
@@ -640,16 +643,19 @@ function useChess() {
       const capture = boardData.current.tiles[+to].piece ?? undefined;
       applyMove(boardData.current, { from, to, piece, capture });
 
+      // Reset halfmoves if pawn advanced or piece was captured, otherwise increment
+      if (piece.type === "pawn" || capture) boardData.current.halfmoves = 0;
+      else boardData.current.halfmoves++;
+
+      // Increment fullmoves
+      if (boardData.current.turn === "black") boardData.current.fullmoves++;
+
       // Switch turns
       boardData.current.turn =
         boardData.current.turn === "white" ? "black" : "white";
-      boardData.current.halfmoves++;
-      if (boardData.current.turn === "white") boardData.current.fullmoves++;
 
-      // Calculate legal moves for new current color
-      const moves = calculateLegalMoves(boardData.current);
-
-      return moves;
+      // Calculate legal moves for new active color
+      return calculateLegalMoves(boardData.current);
     }
     return new Map<string, Set<string>>();
   };
