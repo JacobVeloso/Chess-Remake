@@ -175,8 +175,8 @@ def decode_move(move_idx: int) -> str | None:
 
     # Sliding move
     if move_type < 56:
-        direction = move_type // 7
-        dist = move_type % 7
+        direction = (move_type - 1) // 7
+        dist = move_type % 7 if move_type % 7 > 0 else 7
 
         match direction:
             case 0:

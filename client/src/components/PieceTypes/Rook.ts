@@ -1,6 +1,16 @@
 import type { dimension, PieceData, TileData, Move } from "../types.ts";
+import { deleteMoves } from "../Piece.tsx";
 import { addStraightMoves } from "./Queen.ts";
 
+/**
+ * Calculates all rook moves and stores them in piece's moveset. Move types:
+ * - "N-S": Moves in vertical direction
+ * - "N-W": Moves in horizontal direction
+ * @param piece PieecData object
+ * @param board Array of 64 TileData objects representing board
+ * @param lastMove Piece's previous position, if applicable
+ * @returns Set of all possible moves
+ */
 export function rookMoves(
   piece: PieceData,
   board: TileData[],
@@ -32,8 +42,7 @@ export function rookMoves(
       moves.add(board[prevRank * 8 + prevFile]);
 
       // Remove all vertical moves
-      piece.moves.get("N-S")?.forEach((move) => move.attackers.delete(piece));
-      piece.moves.get("N-S")?.clear();
+      deleteMoves(piece, "N-S");
     }
 
     // Add new upward moves
@@ -92,8 +101,7 @@ export function rookMoves(
       moves.add(board[prevRank * 8 + prevFile]);
 
       // Delete all horizontal moves
-      piece.moves.get("W-E")?.forEach((move) => move.attackers.delete(piece));
-      piece.moves.get("W-E")?.clear();
+      deleteMoves(piece, "W-E");
     }
 
     // Add new left moves
@@ -143,23 +151,26 @@ export function rookMoves(
   return moves;
 }
 
+/**
+ * Calculates all rook moves when rook is moved due to a castle.
+ * @param piece PieecData object
+ * @param board Array of 64 TileData objects representing board
+ * @returns Set of all possible moves
+ */
 export function rookMovesAfterCastle(
   piece: PieceData,
   board: TileData[],
 ): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
   const moves = new Set<TileData>();
-
   const verticalDir = piece.color === "white" ? -1 : 1;
   const horizontalDir = piece.file === 3 ? 1 : -1;
 
   // Clear all moves
-  piece.moves.get("N-S")?.forEach((move) => move.attackers.delete(piece));
-  piece.moves.get("N-S")?.clear();
-  piece.moves.get("W-E")?.forEach((move) => move.attackers.delete(piece));
-  piece.moves.get("W-E")?.clear();
+  deleteMoves(piece, "N-S");
+  deleteMoves(piece, "W-E");
 
-  // Recalculate moves for open vertical
+  // Calculate moves for open vertical
   addStraightMoves(
     board,
     piece,
@@ -169,7 +180,7 @@ export function rookMovesAfterCastle(
     moves,
   );
 
-  // Recalculate moves for open horizontal
+  // Calculate moves for open horizontal
   addStraightMoves(
     board,
     piece,
@@ -185,11 +196,21 @@ export function rookMovesAfterCastle(
   return moves;
 }
 
+/**
+ * Calculates all moves that are no longer possible for a rook due to another piece blocking, and removes them from the piece's moveset.
+ * @param piece PieceData object
+ * @param blockedRank
+ * @param blockedFile
+ * @returns Set of moves no longer possible
+ */
 export function rookBlock(
   piece: PieceData,
-  blockedPos: [dimension, dimension],
+  blockedRank: dimension,
+  blockedFile: dimension,
 ): Set<TileData> {
-  const [blockedRank, blockedFile] = blockedPos;
+  // Check if position actually blocks moves
+  if (blockedRank !== piece.rank && blockedFile !== piece.file)
+    return new Set();
 
   let direction: -1 | 1;
   let moves: Set<TileData>;
@@ -223,12 +244,19 @@ export function rookBlock(
   return blockedMoves;
 }
 
+/**
+ * Calculates all moves that are now possible for a rook due to another unblocking, and adds them to the piece's moveset.
+ * @param piece PieceData object
+ * @param unblockedRank
+ * @param unblockedFile
+ * @returns Set of moves now possible
+ */
 export function rookUnblock(
   piece: PieceData,
   board: TileData[],
-  unblockedPos: [dimension, dimension],
+  unblockedRank: dimension,
+  unblockedFile: dimension,
 ): Set<TileData> {
-  const [unblockedRank, unblockedFile] = unblockedPos;
   let direction: -1 | 1;
   let moves: Set<TileData>;
   if (piece.rank > unblockedRank) {

@@ -20,7 +20,7 @@ def move():
     fen: str = data.get("fen")
     legal_moves: list[str] = data.get("moves")
     # print(fen)
-    # print(legal_moves)
+    print(legal_moves)
     if (len(legal_moves) == 0):
         print("no legal moves")
 
@@ -38,7 +38,11 @@ def move():
 
         best_idx = torch.argmax(policy).item()
         best_move = decode_move(best_idx)
-        # print(best_move)
+        # if best_move == 'd8d8':
+        #     for move in legal_moves:
+        #         if decode_move(encode_move(move)) != move:
+        #             print(f"{move} -> {encode_move(move)} -> {decode_move(encode_move(move))}")
+        print(best_move)
 
         return jsonify({
             "move": best_move

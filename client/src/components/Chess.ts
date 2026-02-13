@@ -226,6 +226,11 @@ export function blockingMoves(
   return moves;
 }
 
+/**
+ * Calculates all legal moves for all pieces for the color determined by board.turn. Accounts for castles, checks, pins & blocked pieces.
+ * @param board BoardData object containing board state and turn
+ * @returns Map of all legal moves, where each value is a set of moves accessed via the ID of the piece that can perform exactly those moves.
+ */
 export function calculateLegalMoves(
   board: BoardData,
 ): Map<PieceData["id"], Set<TileData["id"]>> | null {
@@ -233,7 +238,6 @@ export function calculateLegalMoves(
   const king = Array.from(pieces).filter((piece) => piece.type === "king")[0];
 
   const blocks = checkBlocks(board.tiles, king.rank, king.file);
-  //console.log([...(blocks ?? new Set([board.tiles[0]]))]);
 
   const moves = new Map<PieceData["id"], Set<TileData["id"]>>();
 
@@ -258,9 +262,7 @@ export function calculateLegalMoves(
       illegalCastles.forEach((move) => pieceMoves.delete(move));
 
       // Filter out moves that would put king in check
-      //console.log([...pieceMoves]);
       pieceMoves = filterAttackedTiles(board.tiles, piece, pieceMoves);
-      //console.log([...pieceMoves]);
     }
 
     // Filter by moves that can block check (if applicable)
@@ -295,6 +297,11 @@ export function calculateLegalMoves(
   return new Map();
 }
 
+/**
+ * Removes a piece from the board and the board's collection of pieces. Removes all of the piece's attacks on the board tiles.
+ * @param board BoardData object containing board state and collection of pieces
+ * @param piece PieceData object to delete.
+ */
 function deletePiece(board: BoardData, piece: PieceData): void {
   // Remove piece and all of its attacks from board
   for (const tile of board.tiles) {
@@ -307,6 +314,12 @@ function deletePiece(board: BoardData, piece: PieceData): void {
   else board.blackPieces.delete(piece);
 }
 
+/**
+ * Simulate a move played on the board and returns the new board state. Recalculates the moves for all pieces affected by the move. Increments move counters as necesssary and switches turns (flips board.turn).
+ * @param board BoardData object containing board state
+ * @param move Move object to apply to board
+ * @returns Updated BoardData object.
+ */
 export function applyMove(board: BoardData, move: Move): BoardData {
   const piece = move.piece;
   const sourceTile = board.tiles[+move.from];
@@ -388,19 +401,38 @@ export function applyMove(board: BoardData, move: Move): BoardData {
   // Recalculate possible moves for pieces interacting with source & target tiles
   sourceTile.attackers.forEach((unblockedPiece) => {
     if (unblockedPiece !== piece)
-      unblockMoves(unblockedPiece, board.tiles, [
+      unblockMoves(
+        unblockedPiece,
+        board.tiles,
         sourceTile.rank,
         sourceTile.file,
-      ]);
+      );
   });
-
   targetTile.attackers.forEach((blockedPiece) =>
-    blockMoves(blockedPiece, board.tiles, [targetTile.rank, targetTile.file]),
+    blockMoves(blockedPiece, board.tiles, targetTile.rank, targetTile.file),
   );
+
+  // Reset halfmoves if pawn advanced or piece was captured, otherwise increment
+  if (piece.type === "pawn" || move.capture) board.halfmoves = 0;
+  else board.halfmoves++;
+
+  // Increment fullmoves
+  if (board.turn === "black") board.fullmoves++;
+
+  // Switch turns
+  board.turn = board.turn === "white" ? "black" : "white";
 
   return board;
 }
 
+/**
+ * Generates the FEN representation of a BoardData object. FEN representation is in the form:
+ * "\<piece placements\> \<active color\> \<castling rights\> \<en passant target sqaure\> \<halfmoves\> \<fullmoves\>"
+ *
+ * e.g. "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1" (starting position).
+ * @param board BoardData object containing all information to generate FEN
+ * @returns FEN representation.
+ */
 export function generateFEN(board: BoardData): string {
   let boardFen = "";
   let emptySpaces = 0;
@@ -501,6 +533,12 @@ export function generateFEN(board: BoardData): string {
   );
 }
 
+/**
+ * Determines and returns a boolean array representing the active moves for a certain piece.
+ * @param moves Map containing all legal moves for all pieces.
+ * @param pieceID String ID of piece to highlight moves for.
+ * @returns Boolean array, where true indicates a highlighted tile.
+ */
 export function getHighlightedTiles(
   moves: Map<PieceData["id"], Set<TileData["id"]>>,
   pieceID: PieceData["id"],
@@ -510,6 +548,10 @@ export function getHighlightedTiles(
   return tiles;
 }
 
+/**
+ * Initialises a chess board consisting of TileData objects with their IDs, positions and colors. Board is created without pieces.
+ * @returns Array of 64 TileData objects representing chess board
+ */
 function createBoard(): TileData[] {
   let tileID = 0;
   return Array.from({ length: 64 }, (_, index) => {
@@ -530,6 +572,10 @@ function createBoard(): TileData[] {
   });
 }
 
+/**
+ * Inspects the value stored at env.VITE_FEN to setup the state of the board.
+ * @returns BoardData object storing the state of the board including piece placements & move counters.
+ */
 function setup(): BoardData {
   const OPENING_FEN = import.meta.env.VITE_FEN;
   const [placements, active, castles, enPassants, halfmoves, fullmoves] =
@@ -622,6 +668,7 @@ function setup(): BoardData {
     }
   }
 
+  // Calculate moves for all pieces
   for (const piece of board.whitePieces) calculateMoves(piece, board.tiles);
   for (const piece of board.blackPieces) calculateMoves(piece, board.tiles);
 
@@ -642,17 +689,6 @@ function useChess() {
       // Apply the move to the board
       const capture = boardData.current.tiles[+to].piece ?? undefined;
       applyMove(boardData.current, { from, to, piece, capture });
-
-      // Reset halfmoves if pawn advanced or piece was captured, otherwise increment
-      if (piece.type === "pawn" || capture) boardData.current.halfmoves = 0;
-      else boardData.current.halfmoves++;
-
-      // Increment fullmoves
-      if (boardData.current.turn === "black") boardData.current.fullmoves++;
-
-      // Switch turns
-      boardData.current.turn =
-        boardData.current.turn === "white" ? "black" : "white";
 
       // Calculate legal moves for new active color
       return calculateLegalMoves(boardData.current);

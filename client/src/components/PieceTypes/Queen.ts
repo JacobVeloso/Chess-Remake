@@ -28,6 +28,17 @@ export function addStraightMoves(
   );
 }
 
+/**
+ * Calculates all queen moves and stores them in piece's moveset. Move types:
+ * - "N-S": Moves in vertical direction
+ * - "W-E": Moves in horizontal direction
+ * - "NW-SE": Moves along upper left and lower right diagonal
+ * - "NE-SW": Moves along upper right and lower left diagonal
+ * @param piece PieecData object
+ * @param board Array of 64 TileData objects representing board
+ * @param lastMove Piece's previous position, if applicable
+ * @returns Set of all possible moves
+ */
 export function queenMoves(
   piece: PieceData,
   board: TileData[],
@@ -50,17 +61,22 @@ export function queenMoves(
   ];
 
   const moveAxis =
+    // Horizontal direction
     rank === prevRank && file !== prevFile
       ? piece.moves.get("W-E")
-      : rank !== prevRank && file === prevFile
+      : // Vertical direction
+        rank !== prevRank && file === prevFile
         ? piece.moves.get("N-S")
-        : (rank > prevRank && file > prevFile) ||
+        : // Upper left / lower right diagonal
+          (rank > prevRank && file > prevFile) ||
             (rank < prevRank && file < prevFile)
           ? piece.moves.get("NW-SE")
-          : (rank > prevRank && file < prevFile) ||
+          : // Upper right / lower left diagonal
+            (rank > prevRank && file < prevFile) ||
               (rank < prevRank && file > prevFile)
             ? piece.moves.get("NE-SW")
-            : null;
+            : // No last move
+              null;
 
   if (moveAxis) {
     // Remove current position
@@ -212,17 +228,17 @@ export function queenMoves(
 
 export function queenBlock(
   piece: PieceData,
-  blockedPos: [dimension, dimension],
+  blockedRank: dimension,
+  blockedFile: dimension,
 ): Set<TileData> {
-  const [blockedRank, blockedFile] = blockedPos;
   // straight
   if (piece.rank === blockedRank || piece.file === blockedFile)
-    return rookBlock(piece, blockedPos);
+    return rookBlock(piece, blockedRank, blockedFile);
   // diagonal
   else if (
     Math.abs(blockedRank - piece.rank) === Math.abs(blockedFile - piece.file)
   )
-    return bishopBlock(piece, blockedPos);
+    return bishopBlock(piece, blockedRank, blockedFile);
 
   // TODO error
   return new Set<TileData>();
@@ -231,18 +247,18 @@ export function queenBlock(
 export function queenUnblock(
   piece: PieceData,
   board: TileData[],
-  unblockedPos: [dimension, dimension],
+  unblockedRank: dimension,
+  unblockedFile: dimension,
 ): Set<TileData> {
-  const [unblockedRank, unblockedFile] = unblockedPos;
   // straight
   if (piece.rank === unblockedRank || piece.file === unblockedFile)
-    return rookUnblock(piece, board, unblockedPos);
+    return rookUnblock(piece, board, unblockedRank, unblockedFile);
   // diagonal
   else if (
     Math.abs(unblockedRank - piece.rank) ===
     Math.abs(unblockedFile - piece.file)
   )
-    return bishopUnblock(piece, board, unblockedPos);
+    return bishopUnblock(piece, board, unblockedRank, unblockedFile);
 
   // TODO error
   return new Set<TileData>();

@@ -1,32 +1,27 @@
 import type { dimension, PieceData, TileData, type } from "../types.ts";
+import { deleteMoves } from "../Piece.tsx";
 import { calculateMoves } from "../MoveCalculation.ts";
 
+/**
+ * Calculates all pawn moves and stores them in piece's moveset. Move types:
+ * - "forward": One tile move forward
+ * - "two square": Two tile move forward, only possible on first pawn move
+ * - "left capture": Diagonal capture on left
+ * - "right capture": Diagonal capture on right
+ * @param piece PieecData object
+ * @param board Array of 64 TileData objects representing board
+ * @returns Set of all possible moves
+ */
 export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
-  if (piece.moves.has("forward")) {
-    piece.moves.get("forward")?.forEach((move) => move.attackers.delete(piece));
-    piece.moves.get("forward")?.clear();
-  } else piece.moves.set("forward", new Set<TileData>());
-
-  if (piece.moves.has("two square")) {
-    piece.moves
-      .get("two square")
-      ?.forEach((move) => move.attackers.delete(piece));
-    piece.moves.get("two square")?.clear();
-  } else piece.moves.set("two square", new Set<TileData>());
-
-  if (piece.moves.has("left capture")) {
-    piece.moves
-      .get("left capture")
-      ?.forEach((move) => move.attackers.delete(piece));
-    piece.moves.get("left capture")?.clear();
-  } else piece.moves.set("left capture", new Set<TileData>());
-
-  if (piece.moves.has("right capture")) {
-    piece.moves
-      .get("right capture")
-      ?.forEach((move) => move.attackers.delete(piece));
-    piece.moves.get("right capture")?.clear();
-  } else piece.moves.set("right capture", new Set<TileData>());
+  // Ensure move types exist and clear all moves
+  if (piece.moves.has("forward")) deleteMoves(piece, "forward");
+  else piece.moves.set("forward", new Set<TileData>());
+  if (piece.moves.has("two square")) deleteMoves(piece, "two square");
+  else piece.moves.set("two square", new Set<TileData>());
+  if (piece.moves.has("left capture")) deleteMoves(piece, "left capture");
+  else piece.moves.set("left capture", new Set<TileData>());
+  if (piece.moves.has("right capture")) deleteMoves(piece, "right capture");
+  else piece.moves.set("right capture", new Set<TileData>());
 
   const moves = new Set<TileData>();
   const [rank, file] = [piece.rank, piece.file];
@@ -46,11 +41,10 @@ export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
   }
 
   if (rank !== rankLimit) {
-    // one spot ahead
     piece.moves.get("forward")?.add(board[(rank + direction) * 8 + file]);
     moves.add(board[(rank + direction) * 8 + file]);
 
-    // two spots ahead
+    // Add two square move if pawn is on start rank
     if (rank == startRank && !board[(rank + direction) * 8 + file].piece) {
       piece.moves
         .get("two square")
@@ -58,7 +52,7 @@ export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
       moves.add(board[(rank + 2 * direction) * 8 + file]);
     }
 
-    // left & right captures
+    // Add left & right captures, regardless of if an oppsing piece is on target squares
     if (file > 0) {
       piece.moves
         .get("left capture")
@@ -78,7 +72,8 @@ export function pawnMoves(piece: PieceData, board: TileData[]): Set<TileData> {
 
 export function pawnBlock(
   piece: PieceData,
-  blockedPos: [dimension, dimension],
+  blockedRank: dimension,
+  blockedFile: dimension,
 ): Set<TileData> {
   const canMoveTwo =
     (piece.color === "white" && piece.rank === 6) ||
@@ -89,8 +84,8 @@ export function pawnBlock(
   // Remove two square move if applicable
   if (
     canMoveTwo && // check if pawn can move two
-    piece.file === blockedPos[1] && // check that tile is in front of pawn
-    Math.abs(piece.rank - blockedPos[0]) === 1 // check that tile in front of pawn is blocked
+    piece.file === blockedFile && // check that tile is in front of pawn
+    Math.abs(piece.rank - blockedRank) === 1 // check that tile in front of pawn is blocked
   ) {
     blockedMoves = new Set<TileData>(piece.moves.get("two square")!);
     piece.moves.get("two square")?.clear();
@@ -102,9 +97,9 @@ export function pawnBlock(
 export function pawnUnblock(
   piece: PieceData,
   board: TileData[],
-  unblockedPos: [dimension, dimension],
+  unblockedRank: dimension,
+  unblockedFile: dimension,
 ): Set<TileData> {
-  const [unblockedRank, unblockedFile] = unblockedPos;
   const direction = piece.color === "white" ? -1 : 1;
   const canMoveTwo =
     (piece.color === "white" && piece.rank === 6) ||

@@ -96,6 +96,8 @@ const Board = () => {
 
   const engineMove = async () => {
     try {
+      // Iterate over all legal moves for each piece and collect in one set
+      // Moves are stored in UCI's long algebraic notation (e.g. 'e2e4')
       const legalMoves = new Set<string>();
       for (const [pieceId, moveSet] of moves ?? new Map()) {
         const piece = getPieceData(boardData.current.tiles, pieceId);
@@ -106,7 +108,8 @@ const Board = () => {
           legalMoves.add(encodeMove(source, target));
         }
       }
-      // console.log([...legalMoves]);
+
+      // Send board FEN & set of legal moves to engine to determine a move
       const res = await fetch("http://127.0.0.1:5000/api/process", {
         method: "POST",
         headers: {
@@ -120,8 +123,8 @@ const Board = () => {
 
       const returnVal = await res.json();
       const [source, target] = decodeMove(returnVal.move);
-      // console.log(source, target);
 
+      // Apply chosen move and update board
       moves = movePiece(source, target, moves ?? new Map());
       lastTile.current = source;
       setBoard(extractBoardState(boardData.current.tiles));
@@ -139,11 +142,14 @@ const Board = () => {
     piece: PieceState | null,
     moves: Map<PieceData["id"], Set<TileData["id"]>>,
   ): undefined {
+    // Reset all tiles
     actives.current.forEach((_, i) => (actives.current[i] = false));
 
+    // Highlight tiles if a new active piece is selected
     if (piece && activePiece !== piece)
       moves.get(piece.id)?.forEach((move) => (actives.current[+move] = true));
 
+    // Store piece as 'active'
     setPiece(piece !== activePiece ? piece : null);
 
     return undefined;
@@ -152,6 +158,8 @@ const Board = () => {
   function handleDragStart(event: DragStartEvent) {
     const pieceId = event.active.id as PieceData["id"];
     const piece = getPieceState(board, pieceId);
+
+    // Highlight legal moves for piece
     if (piece) selectPiece(piece, moves ?? new Map());
   }
 
@@ -167,12 +175,16 @@ const Board = () => {
 
     // Check if tile is a legal move for the piece
     if (moves?.get(pieceId)?.has(targetTileId)) {
+      // Unhighlight legal moves
       selectPiece(null, moves);
+
+      // Apply move to board
       const piece = getPieceData(boardData.current.tiles, pieceId);
       if (!piece) return;
       const sourceTileId = board[piece.rank * 8 + piece.file].id;
       moves = movePiece(sourceTileId, targetTileId, moves);
       lastTile.current = sourceTileId;
+
       // Update board state and trigger re-render
       setBoard(extractBoardState(boardData.current.tiles));
 
@@ -181,26 +193,33 @@ const Board = () => {
         return; // End of game
       }
 
+      // Trigger engine to make their move if applicable
       if (PLAYER === "engine") engineMove();
     }
   }
 
   function handleTileClick(tileID: TileData["id"]): undefined {
+    // Check if tile is a legal move for an active piece
     if (moves?.get(activePiece?.id ?? "")?.has(tileID)) {
+      // Unhighlight legal moves
       selectPiece(null, moves);
+
+      // Apply move to board
       const piece = getPieceData(boardData.current.tiles, activePiece!.id);
       if (!piece) return;
       const sourceTileId = board[piece.rank * 8 + piece.file].id;
       moves = movePiece(sourceTileId, tileID, moves);
       lastTile.current = sourceTileId;
+
       // Update board state and trigger re-render
       setBoard(extractBoardState(boardData.current.tiles));
 
       if (moves === null) {
         console.log("GAME OVER");
-        return;
+        return; // End of game
       }
 
+      // Trigger engine to make their move if applicable
       if (PLAYER === "engine") engineMove();
     }
   }

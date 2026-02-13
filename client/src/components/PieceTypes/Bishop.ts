@@ -1,6 +1,15 @@
 import type { dimension, PieceData, TileData, Move } from "../types.ts";
 import { addStraightMoves } from "./Queen.ts";
 
+/**
+ * Calculates all bishop moves and stores them in piece's moveset. Move types:
+ * - "NW-SE": Moves along upper left and lower right diagonal
+ * - "NE-SW": Moves along upper right and lower left diagonal
+ * @param piece PieecData object
+ * @param board Array of 64 TileData objects representing board
+ * @param lastMove Piece's previous position, if applicable
+ * @returns Set of all possible moves
+ */
 export function bishopMoves(
   piece: PieceData,
   board: TileData[],
@@ -178,9 +187,9 @@ export function bishopMoves(
 
 export function bishopBlock(
   piece: PieceData,
-  blockedPos: [dimension, dimension],
+  blockedRank: dimension,
+  blockedFile: dimension,
 ): Set<TileData> {
-  const [blockedRank, blockedFile] = blockedPos;
   let rankDirection: -1 | 1;
   let fileDirection: -1 | 1;
   let moves: Set<TileData>;
@@ -219,9 +228,9 @@ export function bishopBlock(
 export function bishopUnblock(
   piece: PieceData,
   board: TileData[],
-  unblockedPos: [dimension, dimension],
+  unblockedRank: dimension,
+  unblockedFile: dimension,
 ): Set<TileData> {
-  const [unblockedRank, unblockedFile] = unblockedPos;
   let rankDirection: -1 | 1;
   let fileDirection: -1 | 1;
   let moves: Set<TileData>;

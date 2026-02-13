@@ -1,33 +1,31 @@
 import type { dimension, PieceData, TileData, Move } from "../types.ts";
 import { isAttacked } from "../Tile.tsx";
 import { blockingMoves } from "../Chess.ts";
+import { deleteMoves } from "../Piece.tsx";
 import { rookMovesAfterCastle } from "./Rook.ts";
 
+/**
+ * Calculates all king moves and stores them in piece's moveset. Move types:
+ * - "standard": One tile moves in each direction
+ * - "leftCastle": queen side castle
+ * - "rightCastle": king side castle
+ * @param piece PieecData object
+ * @param board Array of 64 TileData objects representing board
+ * @returns Set of all possible moves
+ */
 export function kingMoves(piece: PieceData, board: TileData[]): Set<TileData> {
-  if (piece.moves.has("standard")) {
-    piece.moves
-      .get("standard")
-      ?.forEach((move) => move.attackers.delete(piece));
-    piece.moves.get("standard")?.clear();
-  } else piece.moves.set("standard", new Set<TileData>());
-
-  if (piece.moves.has("leftCastle")) {
-    piece.moves
-      .get("leftCastle")
-      ?.forEach((move) => move.attackers.delete(piece));
-    piece.moves.get("leftCastle")?.clear();
-  } else piece.moves.set("leftCastle", new Set<TileData>());
-
-  if (piece.moves.has("rightCastle")) {
-    piece.moves
-      .get("rightCastle")
-      ?.forEach((move) => move.attackers.delete(piece));
-    piece.moves.get("rightCastle")?.clear();
-  } else piece.moves.set("rightCastle", new Set<TileData>());
+  // Ensure move types exist and clear all moves
+  if (piece.moves.has("standard")) deleteMoves(piece, "standard");
+  else piece.moves.set("standard", new Set<TileData>());
+  if (piece.moves.has("leftCastle")) deleteMoves(piece, "leftCastle");
+  else piece.moves.set("leftCastle", new Set<TileData>());
+  if (piece.moves.has("rightCastle")) deleteMoves(piece, "rightCastle");
+  else piece.moves.set("rightCastle", new Set<TileData>());
 
   const [rank, file] = [piece.rank, piece.file];
   const moves = new Set<TileData>();
 
+  // Add standard moves in each direction
   for (let i = rank - 1; i <= rank + 1; ++i) {
     if (i < 0 || i >= 8) continue;
     for (let j = file - 1; j <= file + 1; ++j) {
@@ -37,7 +35,7 @@ export function kingMoves(piece: PieceData, board: TileData[]): Set<TileData> {
     }
   }
 
-  // Add castling moves
+  // Add castling moves if king has not moved
   if (piece.type === "king" && !piece.params.get("hasMoved")) {
     piece.moves.get("leftCastle")?.add(board[rank * 8 + file - 2]);
     moves.add(board[rank * 8 + file - 2]);

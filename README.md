@@ -1,6 +1,41 @@
-# React + TypeScript + Vite
+# Chess Game & Engine
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A personal project consisting of a recreation of the game of chess and a trained engine to play against.
+
+## Description
+
+The chess remake is coded entirely in Typescript,
+
+The engine is a PyTorch model, trained as a CNN. The training data was pooled from Lichess' open database, which consists of millions of games.
+
+## Getting Started
+
+Install PyTorch:
+
+```
+$ pip install torch torchvision
+```
+
+Install Flask & Flask-CORS:
+
+```
+$ pip install Flask
+$ pip install Flask-Cors
+```
+
+Install zstandard:
+
+```
+$ pip install zstandard
+```
+
+Install python-chess:
+
+```
+$ pip install chess
+```
+
+### Dependencies
 
 Currently, two official plugins are available:
 
