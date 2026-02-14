@@ -96,10 +96,15 @@ export function queenMoves(
     }
   }
 
+  const movedN = prevRank > rank && prevFile === file;
+  const movedS = prevRank < rank && prevFile === file;
+  const movedE = prevRank === rank && prevFile < file;
+  const movedW = prevRank === rank && prevFile > file;
+
   // Add upward moves
   if (
     rank > 0 &&
-    (prevFile !== file || !lastMove || (lastMove.capture && prevRank > rank))
+    (!(movedN || movedS) || !lastMove || (lastMove.capture && movedN))
   )
     addStraightMoves(
       board,
@@ -113,7 +118,7 @@ export function queenMoves(
   // Add downward moves
   if (
     rank < 7 &&
-    (prevFile !== file || !lastMove || (lastMove.capture && prevRank < rank))
+    (!(movedN || movedS) || !lastMove || (lastMove.capture && movedN))
   )
     addStraightMoves(
       board,
@@ -127,7 +132,7 @@ export function queenMoves(
   // Add left moves
   if (
     file > 0 &&
-    (prevRank !== rank || !lastMove || (lastMove.capture && prevFile > file))
+    (!(movedE || movedW) || !lastMove || (lastMove.capture && movedW))
   )
     addStraightMoves(
       board,
@@ -141,7 +146,7 @@ export function queenMoves(
   // Add right moves
   if (
     file < 7 &&
-    (prevRank !== rank || !lastMove || (lastMove.capture && prevFile < file))
+    (!(movedE || movedW) || !lastMove || (lastMove.capture && movedE))
   )
     addStraightMoves(
       board,
@@ -152,14 +157,16 @@ export function queenMoves(
       moves,
     );
 
+  const movedNW = prevRank > rank && prevFile > file;
+  const movedSE = prevRank < rank && prevFile < file;
+  const movedNE = prevRank > rank && prevFile < file;
+  const movedSW = prevRank < rank && prevFile > file;
+
   // Add upper left diagonal
   if (
     rank > 0 &&
     file > 0 &&
-    ((prevRank > rank && prevFile < file) ||
-      (prevRank < rank && prevFile > file) ||
-      !lastMove ||
-      (lastMove.capture && prevRank > rank && prevFile > file))
+    (!(movedNW || movedSE) || !lastMove || (lastMove.capture && movedNW))
   )
     addStraightMoves(
       board,
@@ -174,10 +181,7 @@ export function queenMoves(
   if (
     rank < 7 &&
     file < 7 &&
-    ((prevRank > rank && prevFile < file) ||
-      (prevRank < rank && prevFile > file) ||
-      !lastMove ||
-      (lastMove.capture && prevRank < rank && prevFile < file))
+    (!(movedNW || movedSE) || !lastMove || (lastMove.capture && movedSE))
   )
     addStraightMoves(
       board,
@@ -192,10 +196,7 @@ export function queenMoves(
   if (
     rank > 0 &&
     file < 7 &&
-    ((prevRank > rank && prevFile > file) ||
-      (prevRank < rank && prevFile < file) ||
-      !lastMove ||
-      (lastMove.capture && prevRank > rank && prevFile < file))
+    (!(movedNE || movedSW) || !lastMove || (lastMove.capture && movedNE))
   )
     addStraightMoves(
       board,
@@ -210,10 +211,7 @@ export function queenMoves(
   if (
     rank < 7 &&
     file > 0 &&
-    ((prevRank > rank && prevFile > file) ||
-      (prevRank < rank && prevFile < file) ||
-      !lastMove ||
-      (lastMove.capture && prevRank < rank && prevFile > file))
+    (!(movedNE || movedSW) || !lastMove || (lastMove.capture && movedSW))
   )
     addStraightMoves(
       board,

@@ -1,5 +1,6 @@
 import "./Board.css";
 import Tile from "./Tile.tsx";
+import Promotion from "./Promotion.tsx";
 import type {
   PieceState,
   PieceData,
@@ -10,6 +11,7 @@ import type {
 } from "./types.ts";
 import { encodeMove, decodeMove } from "./Tile.tsx";
 import useChess, { calculateLegalMoves, generateFEN } from "./Chess.ts";
+import { promote } from "./PieceTypes/Pawn.ts";
 import pieces from "../assets/index";
 import {
   DndContext,
@@ -91,6 +93,7 @@ const Board = () => {
   const [activePiece, setPiece] = useState<PieceState | null>(null);
   const actives = useRef<boolean[]>(new Array(64).fill(false));
   const lastTile = useRef<TileData["id"]>("");
+  const [promoting, setPromoting] = useState<boolean>(false);
 
   let moves = calculateLegalMoves(boardData.current);
 
@@ -142,6 +145,8 @@ const Board = () => {
     piece: PieceState | null,
     moves: Map<PieceData["id"], Set<TileData["id"]>>,
   ): undefined {
+    if (promoting) return undefined;
+
     // Reset all tiles
     actives.current.forEach((_, i) => (actives.current[i] = false));
 
@@ -156,6 +161,8 @@ const Board = () => {
   }
 
   function handleDragStart(event: DragStartEvent) {
+    if (promoting) return;
+
     const pieceId = event.active.id as PieceData["id"];
     const piece = getPieceState(board, pieceId);
 
@@ -188,6 +195,11 @@ const Board = () => {
       // Update board state and trigger re-render
       setBoard(extractBoardState(boardData.current.tiles));
 
+      if (boardData.current.promotingPawn) {
+        setPromoting(true);
+        return;
+      }
+
       if (moves === null) {
         console.log("GAME OVER");
         return; // End of game
@@ -199,6 +211,7 @@ const Board = () => {
   }
 
   function handleTileClick(tileID: TileData["id"]): undefined {
+    if (promoting) return;
     // Check if tile is a legal move for an active piece
     if (moves?.get(activePiece?.id ?? "")?.has(tileID)) {
       // Unhighlight legal moves
@@ -214,6 +227,11 @@ const Board = () => {
       // Update board state and trigger re-render
       setBoard(extractBoardState(boardData.current.tiles));
 
+      if (boardData.current.promotingPawn) {
+        setPromoting(true);
+        return;
+      }
+
       if (moves === null) {
         console.log("GAME OVER");
         return; // End of game
@@ -224,24 +242,61 @@ const Board = () => {
     }
   }
 
+  function triggerPromotion(promoteType: type): undefined {
+    if (!promoting || !boardData.current.promotingPawn) return;
+
+    if (
+      promoteType !== "rook" &&
+      promoteType !== "bishop" &&
+      promoteType !== "queen" &&
+      promoteType !== "knight"
+    )
+      return;
+
+    moves = promote(
+      boardData.current,
+      boardData.current.promotingPawn,
+      promoteType,
+    );
+
+    // Update board state and trigger re-render
+    setBoard(extractBoardState(boardData.current.tiles));
+
+    if (moves === null) {
+      console.log("GAME OVER");
+      return; // End of game
+    }
+
+    boardData.current.promotingPawn = null;
+    setPromoting(false);
+
+    // Trigger engine to make their move if applicable
+    if (PLAYER === "engine") engineMove();
+  }
+
   return (
-    <div className="container">
-      <MoveContext value={moves}>
-        <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-          {board.map((tileState) => {
-            return (
-              <Tile
-                key={tileState.id}
-                tileState={tileState}
-                active={actives.current[tileState.rank * 8 + tileState.file]}
-                last={lastTile.current === tileState.id}
-                selectPiece={selectPiece}
-                handleTileClick={handleTileClick}
-              />
-            );
-          })}
-        </DndContext>
-      </MoveContext>
+    <div>
+      <div className="container">
+        <MoveContext value={moves}>
+          <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+            {board.map((tileState) => {
+              return (
+                <Tile
+                  key={tileState.id}
+                  tileState={tileState}
+                  active={actives.current[tileState.rank * 8 + tileState.file]}
+                  last={lastTile.current === tileState.id}
+                  selectPiece={selectPiece}
+                  handleTileClick={handleTileClick}
+                />
+              );
+            })}
+          </DndContext>
+        </MoveContext>
+      </div>
+      {promoting && (
+        <Promotion color={boardData.current.turn} promote={triggerPromotion} />
+      )}
     </div>
   );
 };

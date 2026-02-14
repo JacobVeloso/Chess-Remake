@@ -16,7 +16,7 @@ import {
   checkCastlingMoves,
   removeCastlingMove,
 } from "./PieceTypes/King";
-import { checkPawnMoves, promote } from "./PieceTypes/Pawn";
+import { checkPawnMoves } from "./PieceTypes/Pawn";
 import { calculateMoves, blockMoves, unblockMoves } from "./MoveCalculation";
 import { castle, getCastlingMoves } from "./PieceTypes/King";
 import { isAttacked } from "./Tile";
@@ -314,6 +314,39 @@ function deletePiece(board: BoardData, piece: PieceData): void {
   else board.blackPieces.delete(piece);
 }
 
+export function handleInteractingPieces(
+  tiles: TileData[],
+  source: TileData,
+  target: TileData,
+): void {
+  // Check that piece exists
+  const piece = target.piece;
+  if (!piece) return;
+
+  // Recalculate moves for pieces blocked on source tile
+  source.attackers.forEach((unblockedPiece) => {
+    if (unblockedPiece !== piece)
+      unblockMoves(unblockedPiece, tiles, source.rank, source.file);
+  });
+
+  // Recalculate moves for pieces attacking target tile
+  target.attackers.forEach((blockedPiece) =>
+    blockMoves(blockedPiece, tiles, target.rank, target.file),
+  );
+}
+
+export function nextTurn(board: BoardData, move: Move): void {
+  // Reset halfmoves if pawn advanced or piece was captured, otherwise increment
+  if (move.piece.type === "pawn" || move.capture) board.halfmoves = 0;
+  else board.halfmoves++;
+
+  // Increment fullmoves
+  if (board.turn === "black") board.fullmoves++;
+
+  // Switch turns
+  board.turn = board.turn === "white" ? "black" : "white";
+}
+
 /**
  * Simulate a move played on the board and returns the new board state. Recalculates the moves for all pieces affected by the move. Increments move counters as necesssary and switches turns (flips board.turn).
  * @param board BoardData object containing board state
@@ -392,36 +425,13 @@ export function applyMove(board: BoardData, move: Move): BoardData {
       piece.type === "pawn" &&
       ((piece.color === "white" && piece.rank === 0) ||
         (piece.color === "black" && piece.rank === 7))
-    )
-      promote(board.tiles, piece, "queen"); // TODO: Allow user to choose piece
+    ) {
+      //promote(board.tiles, piece, "queen"); // TODO: Allow user to choose piece
+      board.promotingPawn = piece;
+    }
     // Recalculate possible moves for piece
     else calculateMoves(piece, board.tiles, move);
   }
-
-  // Recalculate possible moves for pieces interacting with source & target tiles
-  sourceTile.attackers.forEach((unblockedPiece) => {
-    if (unblockedPiece !== piece)
-      unblockMoves(
-        unblockedPiece,
-        board.tiles,
-        sourceTile.rank,
-        sourceTile.file,
-      );
-  });
-  targetTile.attackers.forEach((blockedPiece) =>
-    blockMoves(blockedPiece, board.tiles, targetTile.rank, targetTile.file),
-  );
-
-  // Reset halfmoves if pawn advanced or piece was captured, otherwise increment
-  if (piece.type === "pawn" || move.capture) board.halfmoves = 0;
-  else board.halfmoves++;
-
-  // Increment fullmoves
-  if (board.turn === "black") board.fullmoves++;
-
-  // Switch turns
-  board.turn = board.turn === "white" ? "black" : "white";
-
   return board;
 }
 
@@ -483,7 +493,6 @@ export function generateFEN(board: BoardData): string {
 
   function getCastlingFEN(king: PieceData): string {
     const moves = getCastlingMoves(board.tiles, king, false);
-    // console.log([...moves]);
     let queenSide = false;
     let kingSide = false;
     for (const move of moves) {
@@ -590,6 +599,7 @@ function setup(): BoardData {
     halfmoves: +halfmoves,
     fullmoves: +fullmoves,
     epPawn: null,
+    promotingPawn: null,
   };
 
   // Place all pieces
@@ -688,7 +698,18 @@ function useChess() {
     if (piece && legalMoves.get(piece.id)?.has(to)) {
       // Apply the move to the board
       const capture = boardData.current.tiles[+to].piece ?? undefined;
-      applyMove(boardData.current, { from, to, piece, capture });
+      const move: Move = { from, to, piece, capture };
+      applyMove(boardData.current, move);
+
+      if (boardData.current.promotingPawn) return new Map();
+
+      handleInteractingPieces(
+        boardData.current.tiles,
+        boardData.current.tiles[+from],
+        boardData.current.tiles[+to],
+      );
+
+      nextTurn(boardData.current, move);
 
       // Calculate legal moves for new active color
       return calculateLegalMoves(boardData.current);

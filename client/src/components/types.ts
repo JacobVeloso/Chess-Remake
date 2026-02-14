@@ -40,6 +40,7 @@ export type BoardData = {
   halfmoves: number;
   fullmoves: number;
   epPawn: PieceData | null;
+  promotingPawn: PieceData | null;
 };
 
 export type Move = {

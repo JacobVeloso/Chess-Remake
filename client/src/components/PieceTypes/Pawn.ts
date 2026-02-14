@@ -1,4 +1,15 @@
-import type { dimension, PieceData, TileData, type } from "../types.ts";
+import type {
+  dimension,
+  PieceData,
+  TileData,
+  BoardData,
+  type,
+} from "../types.ts";
+import {
+  handleInteractingPieces,
+  nextTurn,
+  calculateLegalMoves,
+} from "../Chess.ts";
 import { deleteMoves } from "../Piece.tsx";
 import { calculateMoves } from "../MoveCalculation.ts";
 
@@ -173,13 +184,13 @@ export function checkPawnMoves(
 }
 
 export function promote(
-  board: TileData[],
+  board: BoardData,
   piece: PieceData,
   newType: type,
-): void {
-  if (piece.type !== "pawn") return;
+): Map<PieceData["id"], Set<TileData["id"]>> | null {
+  if (piece.type !== "pawn") return null;
 
-  // Set new move types
+  // Set new move types & parameters
   switch (newType) {
     case "queen":
       piece.moves.set("N-S", new Set<TileData>());
@@ -190,6 +201,7 @@ export function promote(
     case "rook":
       piece.moves.set("N-S", new Set<TileData>());
       piece.moves.set("W-E", new Set<TileData>());
+      piece.params.set("hasMoved", true);
       break;
     case "bishop":
       piece.moves.set("NW-SE", new Set<TileData>());
@@ -199,7 +211,7 @@ export function promote(
       piece.moves.set("all", new Set<TileData>());
       break;
     default:
-      return;
+      return null;
   }
 
   // Update type of piece
@@ -218,5 +230,21 @@ export function promote(
   piece.params.delete("movedTwo");
 
   // Recaulculate piece moves
-  calculateMoves(piece, board);
+  calculateMoves(piece, board.tiles);
+
+  const source =
+    board.tiles[(piece.color === "white" ? 1 : 6) * 8 + piece.file];
+  const target =
+    board.tiles[(piece.color === "white" ? 0 : 7) * 8 + piece.file];
+  handleInteractingPieces(board.tiles, source, target);
+
+  nextTurn(board, {
+    from: source.id,
+    to: target.id,
+    piece,
+    capture: undefined,
+  });
+
+  // Calculate legal moves for new active color
+  return calculateLegalMoves(board);
 }
