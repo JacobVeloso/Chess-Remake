@@ -19,10 +19,6 @@ def move():
     data: dict = request.json
     fen: str = data.get("fen")
     legal_moves: list[str] = data.get("moves")
-    # print(fen)
-    print(legal_moves)
-    if (len(legal_moves) == 0):
-        print("no legal moves")
 
     with torch.no_grad():
         board_tensor = encode_board(fen).unsqueeze(0).to(device)
@@ -38,11 +34,6 @@ def move():
 
         best_idx = torch.argmax(policy).item()
         best_move = decode_move(best_idx)
-        # if best_move == 'd8d8':
-        #     for move in legal_moves:
-        #         if decode_move(encode_move(move)) != move:
-        #             print(f"{move} -> {encode_move(move)} -> {decode_move(encode_move(move))}")
-        print(best_move)
 
         return jsonify({
             "move": best_move

@@ -27,30 +27,8 @@ class ChessEngine(nn.Module):
         return self.head(x)
 
 def main():
-    # # Load chess game data
-    # game = chess.pgn.read_game(open("games/0.pgn"))
-    # board = game.board()
-
-    # for move in game.mainline_moves():
-    #     fen_before = board.fen()
-    #     move_uci = move.uci()
-    #     board.push(move)
-    #     training_positions.append([fen_before, move_uci])
-
     # Device
     device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
-    # training_positions = []
-    # with os.scandir("data/processed") as pts:
-    #     for f in pts:
-    #         if not f.is_file() or not re.fullmatch(".*\.pt$", f.path):
-    #             continue
-    #         print(f.path)
-    #         tensors: dict[str, torch.Tensor] = torch.load(f.path, map_location=device)
-    #         print("Loaded tensors!")
-    #         for datapoint in tensors.values():
-    #             board, move_tensor = datapoint.split(13)
-    #             move = encode_move_tensor(move_tensor)
-    #             training_positions.append((board, move))
 
     # Training objects
     model = ChessEngine().to(device)
@@ -63,8 +41,6 @@ def main():
         dataset,
         batch_size=1024,
         shuffle=True
-        # num_workers=4,
-        # multiprocessing_context='fork' if torch.backends.mps.is_available() else None
     )
 
     # Training loop
@@ -96,5 +72,4 @@ def main():
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    # multiprocessing.set_start_method('fork', force=True) 
     main()

@@ -37,8 +37,6 @@ def main():
     for f in os.scandir("data/raw"):
         if not f.is_file() or not re.fullmatch(".*\.pgn\.zst$", f.path):
             continue
-        # tensors: dict[str, torch.Tensor] = {}
-        # tnsr_cnt = 0
         games = stream_pgn_zst(f.path)
         for game in games:
             moves = list(game.mainline_moves())
@@ -49,16 +47,7 @@ def main():
             pairs: list[(str, int)] = []
             board = chess.Board()
             for move in moves:
-                # move_tensor = torch.tensor(()).new_zeros((1, 8, 8), device=device)
-                # source = move.from_square
-                # target = move.to_square
-
                 encoded_move = encode_move(move.uci())
-
-                # # Record source and target squares
-                # move_tensor[0][chess.square_rank(source)][chess.square_file(source)] = 1
-                # move_tensor[0][chess.square_rank(target)][chess.square_file(target)] = 2
-
                 pairs.append((board.fen(), encoded_move))
                 board.push(move)
 
@@ -83,12 +72,6 @@ def main():
                     num_chunks += 1
                     num_datapts = 0
                     data = new_chunk()
-
-                # datapoint = torch.cat((board_tensor, encoded_move))
-                # tensors[tnsr_cnt] = datapoint
-                # tnsr_cnt += 1
-
-        # torch.save(tensors, "data/processed/" + f.name.split(".")[0] + ".pt")
 
 if __name__ == "__main__":
     main()

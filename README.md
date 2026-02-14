@@ -10,6 +10,10 @@ The engine is a PyTorch model, trained as a CNN. The training data was pooled fr
 
 ## Getting Started
 
+### Dependencies
+
+**Python 3.10** is used for this project.
+
 Install PyTorch:
 
 ```
@@ -34,10 +38,6 @@ Install python-chess:
 ```
 $ pip install chess
 ```
-
-### Dependencies
-
-TODO
 
 ### Setup
 
@@ -69,3 +69,4 @@ $ python3 main.py
 - Allow player to choose to play as white or black when playing against the model, either within the program or through an environment variable
 - Flip board display when playing in 2-player mode
 - Error checks for `VITE_FEN` when setting up board
+- Automatically configure GPU usage depending on machine (currently uses MPS for Apple Silicon)
