@@ -4,7 +4,7 @@ A personal project consisting of a recreation of the game of chess and a trained
 
 ## Description
 
-The chess remake is coded entirely in Typescript,
+The chess remake is coded entirely in Typescript.
 
 The engine is a PyTorch model, trained as a CNN. The training data was pooled from Lichess' open database, which consists of millions of games.
 
@@ -37,68 +37,35 @@ $ pip install chess
 
 ### Dependencies
 
-Currently, two official plugins are available:
+TODO
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### Setup
 
-## Expanding the ESLint configuration
+Be sure to set the environmental variables in `/client/.env` before running.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+- `VITE_PLAYER` - set to `engine` to play against the model. Any other value will result in 2-player chess.
+- `VITE_FEN` - indicates how the board is setup upon startup. `DEFAULT_FEN` stores the basic starting position
 
-```js
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
+You can freely store any FEN as an environment variable and then substitute it into the `VITE_FEN` variable to seamlessly switch between different board setups between executions.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+> **NOTE**: Currently the program does **not** check that `VITE_FEN` is in the correct format (I plan to include error checks in the future). Learn how FEN notation is defined [here](https://en.wikipedia.org/wiki/Forsyth%E2%80%93Edwards_Notation#:~:text=citation%20needed%5D-,Definition,-%5Bedit%5D)
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+### Executing Program
+
+Run server as usual:
+
+```
+$ npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Run Flask app through `main.py`:
 
-```js
-// eslint.config.js
-import reactX from "eslint-plugin-react-x";
-import reactDom from "eslint-plugin-react-dom";
-
-export default defineConfig([
-  globalIgnores(["dist"]),
-  {
-    files: ["**/*.{ts,tsx}"],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs["recommended-typescript"],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
 ```
+$ python3 main.py
+```
+
+### Future Additions
+
+- Allow player to choose to play as white or black when playing against the model, either within the program or through an environment variable
+- Flip board display when playing in 2-player mode
+- Error checks for `VITE_FEN` when setting up board
