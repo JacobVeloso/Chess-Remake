@@ -35,8 +35,16 @@ export function kingMoves(piece: PieceData, board: TileData[]): Set<TileData> {
     }
   }
 
+  const castleRank = piece.color === "black" ? 0 : 7;
+  const castleFile = 4;
+
   // Add castling moves if king has not moved
-  if (piece.type === "king" && !piece.params.get("hasMoved")) {
+  if (
+    piece.type === "king" &&
+    piece.rank === castleRank &&
+    piece.file === castleFile &&
+    !piece.params.get("hasMoved")
+  ) {
     piece.moves.get("leftCastle")?.add(board[rank * 8 + file - 2]);
     moves.add(board[rank * 8 + file - 2]);
     piece.moves.get("rightCastle")?.add(board[rank * 8 + file + 2]);

@@ -14,7 +14,7 @@ import { addStraightMoves } from "./Queen.ts";
 export function rookMoves(
   piece: PieceData,
   board: TileData[],
-  lastMove: Move | null = null,
+  lastMove?: Move,
 ): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
   const moves = new Set<TileData>();
@@ -23,7 +23,7 @@ export function rookMoves(
   if (!piece.moves.has("N-S")) piece.moves.set("N-S", new Set<TileData>());
   if (!piece.moves.has("W-E")) piece.moves.set("W-E", new Set<TileData>());
 
-  const moved = lastMove !== null;
+  const moved = lastMove !== undefined;
 
   // Determine which axis rook moved along
   const sourceTile = lastMove ? board[+lastMove.from] : null;

@@ -1,7 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { isAttacked } from "../components/Tile.tsx";
-import { makePiece } from "./utilities.ts";
-import { board } from "../components/Board.tsx";
+import { makePiece, board } from "./utilities.ts";
 
 describe("isAttacked", () => {
   it("not attacked", () => {

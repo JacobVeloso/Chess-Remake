@@ -13,7 +13,7 @@ import { addStraightMoves } from "./Queen.ts";
 export function bishopMoves(
   piece: PieceData,
   board: TileData[],
-  lastMove: Move | null,
+  lastMove?: Move,
 ): Set<TileData> {
   const [rank, file] = [piece.rank, piece.file];
   const moves = new Set<TileData>();
@@ -22,7 +22,7 @@ export function bishopMoves(
   if (!piece.moves.has("NW-SE")) piece.moves.set("NW-SE", new Set<TileData>());
   if (!piece.moves.has("NE-SW")) piece.moves.set("NE-SW", new Set<TileData>());
 
-  const moved = lastMove !== null;
+  const moved = lastMove !== undefined;
 
   // Determine which axis rook moved along
   const sourceTile = lastMove ? board[+lastMove.from] : null;

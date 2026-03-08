@@ -314,6 +314,13 @@ function deletePiece(board: BoardData, piece: PieceData): void {
   else board.blackPieces.delete(piece);
 }
 
+/**
+ * Blocks moves from pieces attacking the target tile of a move and unblocks moves from pieces attacking the source tile.
+ * @param tiles : TileData[]
+ * @param source : TileData
+ * @param target : TileData
+ * @returns void
+ */
 export function handleInteractingPieces(
   tiles: TileData[],
   source: TileData,
@@ -335,6 +342,11 @@ export function handleInteractingPieces(
   );
 }
 
+/**
+ * Increment move counters and switch active colors for a board
+ * @param board : BoardData
+ * @param move : move
+ */
 export function nextTurn(board: BoardData, move: Move): void {
   // Reset halfmoves if pawn advanced or piece was captured, otherwise increment
   if (move.piece.type === "pawn" || move.capture) board.halfmoves = 0;

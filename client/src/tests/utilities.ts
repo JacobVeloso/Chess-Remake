@@ -1,5 +1,3 @@
-import pieces from "../assets/index";
-
 import type {
   PieceData,
   TileData,
@@ -7,12 +5,6 @@ import type {
   color,
   dimension,
 } from "../components/types.ts";
-import { pawnMoves, pawnBlock } from "../components/PieceTypes/Pawn.ts";
-import { rookMoves, rookBlock } from "../components/PieceTypes/Rook.ts";
-import { knightMoves, knightBlock } from "../components/PieceTypes/Knight.ts";
-import { bishopMoves, bishopBlock } from "../components/PieceTypes/Bishop.ts";
-import { queenMoves, queenBlock } from "../components/PieceTypes/Queen.ts";
-import { kingMoves, kingBlock } from "../components/PieceTypes/King.ts";
 
 export const BOARD: TileData[] = new Array(64);
 for (let i = 0; i < 64; ++i) {
@@ -30,11 +22,19 @@ for (let i = 0; i < 64; ++i) {
 }
 export var ID = 0;
 
+/**
+ * Instantiates a PieceType object given the parameters. Returned with an empty moveset.
+ * @param type [type]
+ * @param color [color]
+ * @param rank [dimension]
+ * @param file [dimension]
+ * @returns PieceData object
+ */
 export function makePiece(
   type: type,
   color: color,
   rank: dimension,
-  file: dimension
+  file: dimension,
 ): PieceData {
   const params = new Map();
   switch (type) {
@@ -44,12 +44,9 @@ export function makePiece(
         id: "" + ID++,
         color,
         type: "pawn",
-        src: color === "white" ? pieces.whitePawn : pieces.blackPawn,
         rank,
         file,
-        moves: new Set(),
-        calcMoves: pawnMoves,
-        block: pawnBlock,
+        moves: new Map<string, Set<TileData>>(),
         params,
       };
     case "rook":
@@ -58,12 +55,9 @@ export function makePiece(
         id: "" + ID++,
         color: color,
         type: "rook",
-        src: color === "white" ? pieces.whiteRook : pieces.blackRook,
         rank: rank,
         file: file,
-        moves: new Set(),
-        calcMoves: rookMoves,
-        block: rookBlock,
+        moves: new Map<string, Set<TileData>>(),
         params,
       };
     case "knight":
@@ -71,12 +65,9 @@ export function makePiece(
         id: "" + ID++,
         color: color,
         type: "knight",
-        src: color === "white" ? pieces.whiteKnight : pieces.blackKnight,
         rank: rank,
         file: file,
-        moves: new Set(),
-        calcMoves: knightMoves,
-        block: knightBlock,
+        moves: new Map<string, Set<TileData>>(),
         params,
       };
     case "bishop":
@@ -84,12 +75,9 @@ export function makePiece(
         id: "" + ID++,
         color: color,
         type: "bishop",
-        src: color === "white" ? pieces.whiteBishop : pieces.blackBishop,
         rank: rank,
         file: file,
-        moves: new Set(),
-        calcMoves: bishopMoves,
-        block: bishopBlock,
+        moves: new Map<string, Set<TileData>>(),
         params,
       };
     case "king":
@@ -98,12 +86,9 @@ export function makePiece(
         id: "" + ID++,
         color: color,
         type: "king",
-        src: color === "white" ? pieces.whiteKing : pieces.blackKing,
         rank: rank,
         file: file,
-        moves: new Set(),
-        calcMoves: kingMoves,
-        block: kingBlock,
+        moves: new Map<string, Set<TileData>>(),
         params,
       };
     default: // queen
@@ -111,22 +96,27 @@ export function makePiece(
         id: "" + ID++,
         color: color,
         type: "queen",
-        src: color === "white" ? pieces.whiteQueen : pieces.blackQueen,
         rank: rank,
         file: file,
-        moves: new Set(),
-        calcMoves: queenMoves,
-        block: queenBlock,
+        moves: new Map<string, Set<TileData>>(),
         params,
       };
   }
 }
 
+/**
+ * Places a piece with given parameters on the board. Does NOT calculate legal moves for the new piece.
+ * @param type [type]
+ * @param color [color]
+ * @param rank [dimension]
+ * @param file [dimension]
+ * @returns false if there is already a piece on the tile with the given rank & file, true otherwise.
+ */
 export function placePiece(
   type: type,
   color: color,
   rank: dimension,
-  file: dimension
+  file: dimension,
 ): boolean {
   const piece = makePiece(type, color, rank, file);
   const tile = board(rank, file);
@@ -135,14 +125,43 @@ export function placePiece(
   return true;
 }
 
+/**
+ * Returns the TileData object in the board with the given rank & file.
+ * @param rank [dimension]
+ * @param file [dimension]
+ * @returns TileData object
+ */
 export function board(rank: dimension, file: dimension): TileData {
   return BOARD[rank * 8 + file];
 }
 
+/**
+ * Compares two sets element by element to check if they are equal.
+ * @param A [Set<T>]
+ * @param B [Set<T>]
+ * @returns true if the sets contain the exact same elements, false otherwise.
+ */
 export function setsEqual<T>(A: Set<T>, B: Set<T>): boolean {
   if (A.size !== B.size) return false;
   for (const val of A) {
     if (!B.has(val)) return false;
   }
   return true;
+}
+
+/**
+ * Compares all the moves in a moveset with the complete set of expected moves, verifying correctness.
+ * @param expected Complete collection of expected moves
+ * @param moveset Moveset for a PieceData object
+ * @returns true if the moves are correct, false otherwise
+ */
+export function verifyMoves(
+  expected: Set<TileData>,
+  moveset: Map<string, Set<TileData>>,
+): boolean {
+  const all = new Set<TileData>();
+  for (const moves of moveset.values()) {
+    for (const move of moves) all.add(move);
+  }
+  return setsEqual(expected, all);
 }

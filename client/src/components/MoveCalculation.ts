@@ -16,7 +16,7 @@ import type { PieceData, TileData, dimension, Move } from "./types";
 export function calculateMoves(
   piece: PieceData,
   board: TileData[],
-  lastMove: Move | null = null,
+  lastMove?: Move,
 ): Set<TileData> {
   let moves: Set<TileData>;
   switch (piece.type) {
