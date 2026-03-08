@@ -3,11 +3,9 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 from torch import optim
-import re
 import multiprocessing
-import os
 
-from dataset import ChessDataset, encode_move_tensor
+from dataset import ChessDataset
 
 class ChessEngine(nn.Module):
     def __init__(self):
