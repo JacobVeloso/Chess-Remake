@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 import multiprocessing
 import torch
+import os
 from engine import ChessEngine
 from dataset import encode_move, decode_move, encode_board
 
@@ -41,4 +42,5 @@ def move():
 
 if __name__ == "__main__":
     multiprocessing.freeze_support()
-    app.run(debug=True)
+    port = int(os.environ.get("PORT", 4000))
+    app.run(host="0.0.0.0", port=port, debug=True)
