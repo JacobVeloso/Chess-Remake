@@ -7,12 +7,19 @@ from engine import ChessEngine
 from dataset import encode_move, decode_move, encode_board
 
 app = Flask(__name__)
-CORS(app, resources={r'/api/*': {'origins': "http://localhost:5173"}})
+CORS(app, resources={
+    r'/api/*': {
+        'origins': [
+            "http://localhost:5173", 
+            "https://*.vercel.app"
+        ]
+    }
+})
 
 device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
 model = ChessEngine().to(device)
 
-model.load_state_dict(torch.load("model.pt"))
+model.load_state_dict(torch.load("model.pt", map_location=device))
 model.eval()
 
 @app.route('/api/process', methods=["POST"])
