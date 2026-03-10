@@ -11,10 +11,12 @@ CORS(app, resources={
     r'/api/*': {
         'origins': [
             "http://localhost:5173", 
-            "https://*.vercel.app"
+            "https://chess-remake-ax6m.vercel.app"
         ]
     }
 })
+
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024  # 16 KB
 
 device = torch.device("mps") if torch.backends.mps.is_available() else torch.device("cpu")
 model = ChessEngine().to(device)
