@@ -26,32 +26,28 @@ model.eval()
 
 @app.route('/api/process', methods=["POST"])
 def move():
-    # data: dict = request.json
-    # fen: str = data.get("fen")
-    # legal_moves: list[str] = data.get("moves")
+    data: dict = request.get_json()
+    fen: str = data.get("fen")
+    legal_moves: list[str] = data.get("moves")
 
-    # with torch.no_grad():
-    #     board_tensor = encode_board(fen).unsqueeze(0).to(device)
-    #     logits = model(board_tensor)[0]
-    #     policy = torch.softmax(logits, dim=0)
+    with torch.no_grad():
+        board_tensor = encode_board(fen).unsqueeze(0).to(device)
+        logits = model(board_tensor)[0]
+        policy = torch.softmax(logits, dim=0)
 
-    #     mask = torch.zeros(4864, device=device)
-    #     for move in legal_moves:
-    #         mask[encode_move(move)] = 1
+        mask = torch.zeros(4864, device=device)
+        for move in legal_moves:
+            mask[encode_move(move)] = 1
 
-    #     policy *= mask
-    #     policy /= policy.sum()
+        policy *= mask
+        policy /= policy.sum()
 
-    #     best_idx = torch.argmax(policy).item()
-    #     best_move = decode_move(best_idx)
+        best_idx = torch.argmax(policy).item()
+        best_move = decode_move(best_idx)
 
-    #     return jsonify({
-    #         "move": best_move
-    #     })
-    print("Request received")
-    data = request.get_json(silent=True)
-    print("Data:", data)
-    return {"move": "e2e4"}
+        return jsonify({
+            "move": best_move
+        })
 
 if __name__ == "__main__":
     # multiprocessing.freeze_support()
