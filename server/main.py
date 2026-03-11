@@ -54,6 +54,6 @@ def move():
     return {"move": "e2e4"}
 
 if __name__ == "__main__":
-    multiprocessing.freeze_support()
+    # multiprocessing.freeze_support()
     port = int(os.environ.get("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
