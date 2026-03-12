@@ -1,10 +1,13 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import multiprocessing
+# import multiprocessing
 import torch
 import os
 from engine import ChessEngine
 from dataset import encode_move, decode_move, encode_board
+
+torch.set_num_threads(1)
+torch.set_num_interop_threads(1)
 
 app = Flask(__name__)
 CORS(app, resources={
